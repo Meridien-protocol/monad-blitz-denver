@@ -5,6 +5,7 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { config } from "@/lib/wagmi";
 import { EventProvider } from "@/providers/EventProvider";
+import { FaucetDrip } from "@/components/FaucetDrip";
 import { useState } from "react";
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -21,7 +22,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
             borderRadius: "medium",
           })}
         >
-          <EventProvider>{children}</EventProvider>
+          <EventProvider>
+            <FaucetDrip />
+            {children}
+          </EventProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
