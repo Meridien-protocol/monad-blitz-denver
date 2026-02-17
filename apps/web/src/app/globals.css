@@ -73,6 +73,57 @@ body {
   animation: curtain-spin 4s linear infinite;
 }
 
+/* CTA button: underline animation + arrow slide */
+.cta-link {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cta-link .cta-text {
+  position: relative;
+  color: var(--meridian-gold);
+  padding-bottom: 7px;
+  padding-right: 15px;
+  letter-spacing: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.cta-link .cta-text::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: var(--meridian-gold);
+  transform-origin: bottom right;
+  transition: transform 0.25s ease-out;
+}
+
+.cta-link:hover .cta-text::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+.cta-link svg {
+  transform: translateX(-8px);
+  transition: all 0.3s ease;
+  fill: var(--meridian-gold);
+}
+
+.cta-link:hover svg {
+  transform: translateX(0);
+}
+
+.cta-link:active svg {
+  transform: scale(0.9);
+}
+
 
 
 @layer base {

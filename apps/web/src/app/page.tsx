@@ -180,11 +180,11 @@ export default function Home() {
               <h2 className="text-base font-semibold text-neutral-300 sm:text-lg">
                 Decisions{count > 0 ? ` (${count})` : ""}
               </h2>
-              <Link
-                href="/decisions/create"
-                className="rounded bg-meridian-gold px-3 py-1.5 text-xs font-bold text-black transition-colors hover:bg-meridian-gold/90 sm:px-4 sm:py-2 sm:text-sm"
-              >
-                Create Decision
+              <Link href="/decisions/create" className="cta-link">
+                <span className="cta-text">Create Decision</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width={30} height={10} viewBox="0 0 46 16">
+                  <path d="M8,0,6.545,1.455l5.506,5.506H-30V9.039H12.052L6.545,14.545,8,16l8-8Z" transform="translate(30)" />
+                </svg>
               </Link>
             </div>
 
