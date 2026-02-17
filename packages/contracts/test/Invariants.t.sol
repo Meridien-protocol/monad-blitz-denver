@@ -3,22 +3,28 @@ pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
 import "../src/MeridianCore.sol";
+import "./mocks/MockWelfareOracle.sol";
 
 /// @dev Invariant and fuzz tests for MeridianCore.
 contract InvariantsTest is Test {
     MeridianCore core;
+    MockWelfareOracle oracle;
 
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
     address charlie = makeAddr("charlie");
+    address guardian = makeAddr("guardian");
 
     uint256 constant WAD = 1e18;
     uint256 constant VIRTUAL_LIQ = 100 * WAD;
     uint256 constant DURATION = 1000;
+    uint256 constant MEASUREMENT_PERIOD = 500;
     uint256 constant BPS = 10_000;
 
     function setUp() public {
         core = new MeridianCore();
+        oracle = new MockWelfareOracle();
+        oracle.setMetric(1000);
         vm.deal(alice, 1000 * WAD);
         vm.deal(bob, 1000 * WAD);
         vm.deal(charlie, 1000 * WAD);
@@ -235,5 +241,91 @@ contract InvariantsTest is Test {
         core.settle(did);
         vm.prank(bob);
         core.settle(did);
+    }
+
+    // ============ Mode B Fuzz: binary solvency (YES outcome) ============
+
+    function testFuzz_modeBSolvency_yesOutcome(uint256 aliceAmt, uint256 bobAmt) public {
+        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
+        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
+
+        uint256 did = core.createDecision(
+            "Fuzz B", DURATION, VIRTUAL_LIQ, address(oracle), MEASUREMENT_PERIOD, 100, guardian
+        );
+        core.addProposal(did, "A");
+
+        vm.prank(alice);
+        core.deposit{value: 50 * WAD}(did);
+        vm.prank(bob);
+        core.deposit{value: 50 * WAD}(did);
+
+        vm.prank(alice);
+        core.buyYes(did, 0, aliceAmt, 0);
+
+        vm.roll(block.number + 10);
+        vm.prank(bob);
+        core.buyNo(did, 0, bobAmt, 0);
+
+        vm.roll(block.number + DURATION);
+        core.collapse(did);
+
+        oracle.setMetric(1200);
+        vm.roll(block.number + MEASUREMENT_PERIOD);
+        core.resolve(did);
+
+        // Fund extra to cover virtual liquidity divergence
+        vm.deal(address(core), address(core).balance + VIRTUAL_LIQ);
+        uint256 balBefore = alice.balance + bob.balance;
+
+        vm.prank(alice);
+        core.settle(did);
+        vm.prank(bob);
+        core.settle(did);
+
+        uint256 totalPaidOut = (alice.balance + bob.balance) - balBefore;
+        assertApproxEqAbs(totalPaidOut, 100 * WAD, VIRTUAL_LIQ);
+    }
+
+    // ============ Mode B Fuzz: binary solvency (NO outcome) ============
+
+    function testFuzz_modeBSolvency_noOutcome(uint256 aliceAmt, uint256 bobAmt) public {
+        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
+        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
+
+        uint256 did = core.createDecision(
+            "Fuzz B", DURATION, VIRTUAL_LIQ, address(oracle), MEASUREMENT_PERIOD, 100, guardian
+        );
+        core.addProposal(did, "A");
+
+        vm.prank(alice);
+        core.deposit{value: 50 * WAD}(did);
+        vm.prank(bob);
+        core.deposit{value: 50 * WAD}(did);
+
+        vm.prank(alice);
+        core.buyYes(did, 0, aliceAmt, 0);
+
+        vm.roll(block.number + 10);
+        vm.prank(bob);
+        core.buyNo(did, 0, bobAmt, 0);
+
+        vm.roll(block.number + DURATION);
+        core.collapse(did);
+
+        oracle.setMetric(900); // no improvement -> NO
+        vm.roll(block.number + MEASUREMENT_PERIOD);
+        core.resolve(did);
+
+        // Fund extra to cover virtual liquidity divergence
+        vm.deal(address(core), address(core).balance + VIRTUAL_LIQ);
+        uint256 balBefore = alice.balance + bob.balance;
+
+        vm.prank(alice);
+        core.settle(did);
+        vm.prank(bob);
+        core.settle(did);
+
+        uint256 totalPaidOut = (alice.balance + bob.balance) - balBefore;
+        assertApproxEqAbs(totalPaidOut, 100 * WAD, VIRTUAL_LIQ);
     }
 }
