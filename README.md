@@ -1,15 +1,61 @@
-# Monad Blitz Denver Submission Process
+# Meridian: Quantum Futarchy
 
-## Steps to prepare your project repo:
+Governance intelligence through prediction markets on Monad.
 
-1. Visit the `monad-blitz-denver` repo (link [here](https://github.com/monad-developers/monad-blitz-denver)) and fork it.
+Meridian implements **quantum markets** -- deposit once, trade in every proposal universe simultaneously. Only truth settles.
 
-![1.png](/screenshots/1.png)
+## How It Works
 
-2. Give it your project name, a one-liner description, make sure you are forking `main` branch and click `Create Fork`
+1. A **Decision** poses a governance question
+2. Multiple **Proposals** compete to answer it
+3. Traders deposit MON and receive full trading power across all proposal markets
+4. Each market produces a welfare prediction via CPMM price discovery
+5. The highest time-weighted welfare prediction wins (wave function collapse)
+6. Losing markets fully revert -- capital returned
 
-![2.png](/screenshots/2.png)
+## Architecture
 
-3. In your fork you can make all the changes you want, add code of your project, create branches, add information to `README.md` , you can change anything and everything.
+```
+monad-blitz/
+  packages/contracts/   Foundry -- MeridianCore.sol (singleton CPMM + TWAP oracle)
+  packages/shared/      TypeScript types, ABI exports, math utils
+  apps/web/             Next.js 15 + React 19 + RainbowKit + wagmi v2
+```
 
-4. For next steps head to [Blitz Portal](https://blitz.devnads.com)
+## Quick Start
+
+```bash
+pnpm install
+
+# contracts
+cd packages/contracts
+forge build
+forge test -vvv
+
+# frontend
+pnpm dev
+```
+
+## Deployed
+
+**Monad Testnet** (Chain ID: 10143)
+
+| Contract | Address |
+|----------|---------|
+| MeridianCore | `0xb9E4C02923D50624031979cEB9F5EDb391Ce1601` |
+
+## Key Properties
+
+| Metric | Classical Futarchy | Quantum (Meridian) |
+|--------|-------------------|--------------------|
+| Capital per market | D/N | D |
+| Capital efficiency | 1/N (degrades) | 1 (constant) |
+| Adding a proposal | Requires liquidity | Zero marginal cost |
+
+## Spec
+
+See [MERIDIAN-SPEC.md](./MERIDIAN-SPEC.md) for the full formal specification.
+
+## License
+
+MIT
