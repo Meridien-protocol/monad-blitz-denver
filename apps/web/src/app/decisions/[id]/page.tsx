@@ -11,8 +11,9 @@ import { DepositPanel } from "@/components/DepositPanel";
 import { SettlementPanel } from "@/components/SettlementPanel";
 import { TradeFeedTicker } from "@/components/TradeFeedTicker";
 import { BlockHeartbeat } from "@/components/BlockHeartbeat";
+import { AddProposalForm } from "@/components/AddProposalForm";
 import { useDecision, useProposals, useUserDeposit, useSettled } from "@/hooks/useContract";
-import { welfare } from "@meridian/shared";
+import { welfare, MAX_PROPOSALS } from "@meridian/shared";
 
 export default function DecisionPage({
   params,
@@ -110,6 +111,14 @@ export default function DecisionPage({
                 );
               })}
             </div>
+          )}
+
+          {status === 0 && (
+            <AddProposalForm
+              decisionId={decisionId}
+              proposalCount={proposalCount}
+              maxProposals={MAX_PROPOSALS}
+            />
           )}
         </section>
 
