@@ -108,3 +108,33 @@ export function useSettle() {
 
   return { settle, hash, isPending, isConfirming, isSuccess, error };
 }
+
+export function useCreateDecision() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const receipt = useWaitForTransactionReceipt({ hash });
+
+  function createDecision(title: string, durationInBlocks: bigint, virtualLiquidity: bigint) {
+    writeContract({
+      ...CONTRACT,
+      functionName: "createDecision",
+      args: [title, durationInBlocks, virtualLiquidity],
+    });
+  }
+
+  return { createDecision, hash, isPending, isConfirming: receipt.isLoading, isSuccess: receipt.isSuccess, receipt: receipt.data, error };
+}
+
+export function useAddProposal() {
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  function addProposal(decisionId: bigint, title: string) {
+    writeContract({
+      ...CONTRACT,
+      functionName: "addProposal",
+      args: [decisionId, title],
+    });
+  }
+
+  return { addProposal, hash, isPending, isConfirming, isSuccess, error, reset };
+}
