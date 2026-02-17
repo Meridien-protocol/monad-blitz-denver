@@ -10,7 +10,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-meridian-border bg-meridian-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="flex items-center">
-          <CompassRoseLogo size={120} />
+          <CompassRoseLogo size={40} />
         </Link>
         <div className="flex items-center gap-4">
           <BlockHeartbeat />

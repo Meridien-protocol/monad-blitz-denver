@@ -13,7 +13,7 @@ export default function Home() {
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-16">
         <section className="flex flex-col items-center gap-6 py-20 text-center">
-          <CompassRoseLogo size={240} />
+          <CompassRoseLogo size={120} />
           <p className="max-w-md text-lg text-neutral-400">
             Quantum Futarchy on Monad. Capital-efficient prediction market
             governance where collective intelligence guides decisions.
