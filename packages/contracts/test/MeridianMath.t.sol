@@ -6,20 +6,12 @@ import "../src/libraries/MeridianMath.sol";
 
 /// @dev Wrapper to test library reverts via external calls.
 contract MathHarness {
-    function calcBuyYes(uint256 yesR, uint256 noR, uint256 d) external pure returns (uint256) {
-        return MeridianMath.calcBuyYes(yesR, noR, d);
+    function calcSwapOutput(uint256 reserveIn, uint256 reserveOut, uint256 amountIn) external pure returns (uint256) {
+        return MeridianMath.calcSwapOutput(reserveIn, reserveOut, amountIn);
     }
 
-    function calcBuyNo(uint256 yesR, uint256 noR, uint256 d) external pure returns (uint256) {
-        return MeridianMath.calcBuyNo(yesR, noR, d);
-    }
-
-    function calcSellYes(uint256 yesR, uint256 noR, uint256 q) external pure returns (uint256) {
-        return MeridianMath.calcSellYes(yesR, noR, q);
-    }
-
-    function welfare(uint256 yesR, uint256 noR) external pure returns (uint256) {
-        return MeridianMath.welfare(yesR, noR);
+    function yesPrice(uint256 yesR, uint256 noR) external pure returns (uint256) {
+        return MeridianMath.yesPrice(yesR, noR);
     }
 }
 
@@ -58,103 +50,84 @@ contract MeridianMathTest is Test {
         assertTrue((z + 1) * (z + 1) > x, "sqrt too small");
     }
 
-    // ============ welfare ============
+    // ============ yesPrice ============
 
-    function test_welfare_balanced() public pure {
-        assertEq(MeridianMath.welfare(100 * WAD, 100 * WAD), 5000);
+    function test_yesPrice_balanced() public pure {
+        assertEq(MeridianMath.yesPrice(100 * WAD, 100 * WAD), 5000);
     }
 
-    function test_welfare_yesHeavy() public pure {
-        assertEq(MeridianMath.welfare(200 * WAD, 100 * WAD), 3333);
+    function test_yesPrice_yesHeavy() public pure {
+        // More YES in reserve = cheaper YES = lower price
+        assertEq(MeridianMath.yesPrice(200 * WAD, 100 * WAD), 3333);
     }
 
-    function test_welfare_noHeavy() public pure {
-        assertEq(MeridianMath.welfare(100 * WAD, 200 * WAD), 6666);
+    function test_yesPrice_noHeavy() public pure {
+        // More NO in reserve = expensive YES = higher price
+        assertEq(MeridianMath.yesPrice(100 * WAD, 200 * WAD), 6666);
     }
 
-    function testFuzz_welfare_inRange(uint256 yesR, uint256 noR) public pure {
+    function testFuzz_yesPrice_inRange(uint256 yesR, uint256 noR) public pure {
         yesR = bound(yesR, 1, 1e30);
         noR = bound(noR, 1, 1e30);
-        uint256 w = MeridianMath.welfare(yesR, noR);
-        assertTrue(w <= BPS, "welfare > 10000");
+        uint256 p = MeridianMath.yesPrice(yesR, noR);
+        assertTrue(p <= BPS, "price > 10000");
     }
 
-    // ============ calcBuyYes ============
-
-    function test_calcBuyYes_specExample() public pure {
-        // From spec Section 5.7: Pool (100, 100), buy YES with d=10
-        // YES_out = 10 * 210 / 110 = 19.0909...
-        uint256 yesOut = MeridianMath.calcBuyYes(100 * WAD, 100 * WAD, 10 * WAD);
-        assertApproxEqRel(yesOut, 19090909090909090909, 1e12);
+    function test_yesPrice_revertsOnEmptyPool() public {
+        vm.expectRevert("MeridianMath: empty pool");
+        harness.yesPrice(0, 0);
     }
 
-    function test_calcBuyYes_smallTrade() public pure {
-        uint256 yesOut = MeridianMath.calcBuyYes(1000 * WAD, 1000 * WAD, 1 * WAD);
-        assertTrue(yesOut > WAD && yesOut < 3 * WAD);
+    // ============ calcSwapOutput ============
+
+    function test_calcSwapOutput_balanced() public pure {
+        // Pool (100, 100), swap 10 in
+        // out = 100 * 10 / (100 + 10) = 1000/110 = 9.0909...
+        uint256 out = MeridianMath.calcSwapOutput(100 * WAD, 100 * WAD, 10 * WAD);
+        assertApproxEqRel(out, 9090909090909090909, 1e12);
     }
 
-    function testFuzz_calcBuyYes_alwaysMoreThanInput(uint256 yesR, uint256 noR, uint256 d) public pure {
-        yesR = bound(yesR, WAD, 1e30);
-        noR = bound(noR, WAD, 1e30);
-        d = bound(d, 1, 1e30);
-        uint256 yesOut = MeridianMath.calcBuyYes(yesR, noR, d);
-        assertTrue(yesOut >= d, "YES out less than input");
+    function test_calcSwapOutput_unbalanced() public pure {
+        // Pool (200, 100), swap 10 in
+        // out = 100 * 10 / (200 + 10) = 1000/210 = 4.7619...
+        uint256 out = MeridianMath.calcSwapOutput(200 * WAD, 100 * WAD, 10 * WAD);
+        assertApproxEqRel(out, 4761904761904761904, 1e12);
     }
 
-    // ============ calcBuyNo ============
-
-    function test_calcBuyNo_balanced() public pure {
-        uint256 noOut = MeridianMath.calcBuyNo(100 * WAD, 100 * WAD, 10 * WAD);
-        uint256 yesOut = MeridianMath.calcBuyYes(100 * WAD, 100 * WAD, 10 * WAD);
-        assertEq(noOut, yesOut, "balanced pool should give same output");
+    function testFuzz_calcSwapOutput_lessThanReserve(uint256 reserveIn, uint256 reserveOut, uint256 amountIn)
+        public
+        pure
+    {
+        reserveIn = bound(reserveIn, WAD, 1e30);
+        reserveOut = bound(reserveOut, WAD, 1e30);
+        amountIn = bound(amountIn, 1, 1e30);
+        uint256 out = MeridianMath.calcSwapOutput(reserveIn, reserveOut, amountIn);
+        assertTrue(out < reserveOut, "output >= reserveOut");
     }
 
-    // ============ calcSellYes ============
+    function testFuzz_calcSwapOutput_kInvariant(uint256 reserveIn, uint256 reserveOut, uint256 amountIn)
+        public
+        pure
+    {
+        reserveIn = bound(reserveIn, WAD, 1e27);
+        reserveOut = bound(reserveOut, WAD, 1e27);
+        amountIn = bound(amountIn, 1, 1e27);
+        uint256 out = MeridianMath.calcSwapOutput(reserveIn, reserveOut, amountIn);
 
-    function test_calcSellYes_roundTrip() public pure {
-        uint256 yesR = 100 * WAD;
-        uint256 noR = 100 * WAD;
-        uint256 d = 10 * WAD;
-
-        uint256 yesOut = MeridianMath.calcBuyYes(yesR, noR, d);
-        uint256 newYesR = (yesR * noR) / (noR + d);
-        uint256 newNoR = noR + d;
-
-        uint256 vMonBack = MeridianMath.calcSellYes(newYesR, newNoR, yesOut);
-        assertApproxEqRel(vMonBack, d, 1e14);
+        uint256 kBefore = reserveIn * reserveOut;
+        uint256 kAfter = (reserveIn + amountIn) * (reserveOut - out);
+        // k should never decrease (may increase slightly due to rounding)
+        assertTrue(kAfter >= kBefore, "k decreased");
     }
 
-    function testFuzz_calcSellYes_neverMoreThanSpent(uint256 yesR, uint256 noR, uint256 d) public pure {
-        yesR = bound(yesR, WAD, 1e27);
-        noR = bound(noR, WAD, 1e27);
-        d = bound(d, WAD / 100, 1e27);
-
-        uint256 yesOut = MeridianMath.calcBuyYes(yesR, noR, d);
-        uint256 newYesR = (yesR * noR) / (noR + d);
-        uint256 newNoR = noR + d;
-        uint256 vMonBack = MeridianMath.calcSellYes(newYesR, newNoR, yesOut);
-
-        // Allow rounding tolerance: integer division in reserve calc can lose precision.
-        // The key invariant is that you can't profit from a round-trip.
-        // With integer division on reserves, the sell may return up to a few wei more,
-        // but never a meaningful amount. Allow up to sqrt(d) tolerance for large values.
-        uint256 tolerance = MeridianMath.sqrt(d) + 2;
-        assertTrue(vMonBack <= d + tolerance, "sell returned significantly more than spent");
+    function test_calcSwapOutput_revertsOnZeroInput() public {
+        vm.expectRevert("MeridianMath: zero input");
+        harness.calcSwapOutput(100 * WAD, 100 * WAD, 0);
     }
 
-    // ============ calcSellNo ============
-
-    function test_calcSellNo_roundTrip() public pure {
-        uint256 yesR = 100 * WAD;
-        uint256 noR = 100 * WAD;
-        uint256 d = 10 * WAD;
-
-        uint256 noOut = MeridianMath.calcBuyNo(yesR, noR, d);
-        uint256 newYesR = yesR + d;
-        uint256 newNoR = (yesR * noR) / (yesR + d);
-
-        uint256 vMonBack = MeridianMath.calcSellNo(newYesR, newNoR, noOut);
-        assertApproxEqRel(vMonBack, d, 1e14);
+    function test_calcSwapOutput_revertsOnEmptyPool() public {
+        vm.expectRevert("MeridianMath: empty pool");
+        harness.calcSwapOutput(0, 100 * WAD, 10 * WAD);
     }
 
     // ============ applyFee ============
@@ -170,37 +143,5 @@ contract MeridianMathTest is Test {
         feeBps = bound(feeBps, 0, BPS);
         (uint256 effective, uint256 fee) = MeridianMath.applyFee(amount, feeBps);
         assertEq(effective + fee, amount, "fee + effective != original");
-    }
-
-    // ============ reservesAfterBuyYes ============
-
-    function test_reservesAfterBuyYes_kIncreases() public pure {
-        uint256 yesR = 100 * WAD;
-        uint256 noR = 100 * WAD;
-        uint256 d = 10 * WAD;
-        uint256 fee = (d * 30) / BPS;
-        uint256 effective = d - fee;
-
-        uint256 kBefore = yesR * noR;
-        (uint256 newYesR, uint256 newNoR) = MeridianMath.reservesAfterBuyYes(yesR, noR, effective, fee);
-        uint256 kAfter = newYesR * newNoR;
-        assertTrue(kAfter >= kBefore, "k decreased after trade with fees");
-    }
-
-    // ============ Revert tests (via harness) ============
-
-    function test_calcBuyYes_revertsOnZeroInput() public {
-        vm.expectRevert("MeridianMath: zero input");
-        harness.calcBuyYes(100 * WAD, 100 * WAD, 0);
-    }
-
-    function test_calcBuyYes_revertsOnEmptyPool() public {
-        vm.expectRevert("MeridianMath: empty pool");
-        harness.calcBuyYes(0, 100 * WAD, 10 * WAD);
-    }
-
-    function test_welfare_revertsOnEmptyPool() public {
-        vm.expectRevert("MeridianMath: empty pool");
-        harness.welfare(0, 0);
     }
 }

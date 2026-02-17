@@ -14,8 +14,8 @@ contract OracleHarness {
         oracle.init(blockNumber);
     }
 
-    function update(uint256 rawWelfare, uint256 maxChange, uint256 blockNumber) external {
-        oracle.update(rawWelfare, maxChange, blockNumber);
+    function update(uint256 rawPrice, uint256 maxChange, uint256 blockNumber) external {
+        oracle.update(rawPrice, maxChange, blockNumber);
     }
 
     function finalize(uint256 blockNumber) external {

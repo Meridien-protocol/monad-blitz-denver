@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 /// @title TWAPOracle
-/// @notice Lagging TWAP oracle for manipulation-resistant welfare price readings.
+/// @notice Lagging TWAP oracle for manipulation-resistant YES price readings.
 /// @dev Implements clamped price updates (MAX_CHANGE_PER_BLOCK) and cumulative price accumulation.
 ///      The oracle tracks a "lagged observation" that can move at most MAX_CHANGE bps per block,
 ///      preventing sudden price jumps from affecting the TWAP.
@@ -12,7 +12,7 @@ library TWAPOracle {
     struct State {
         uint128 priceCumulative; // Running sum of (observation * blocks_elapsed)
         uint48 lastUpdateBlock; // Last block the oracle was updated
-        uint48 lastObservation; // Last recorded welfare (bps), clamped
+        uint48 lastObservation; // Last recorded price (bps), clamped
         uint48 startBlock; // Block when oracle started (for TWAP window)
         uint48 startCumulative; // priceCumulative at startBlock (cast from uint128)
     }
@@ -23,17 +23,17 @@ library TWAPOracle {
     function init(State storage self, uint256 blockNumber) internal {
         self.priceCumulative = 0;
         self.lastUpdateBlock = uint48(blockNumber);
-        self.lastObservation = 5000; // 50% initial welfare
+        self.lastObservation = 5000; // 50% initial price
         self.startBlock = uint48(blockNumber);
         self.startCumulative = 0;
     }
 
     /// @notice Update the oracle before a trade. Call this BEFORE modifying reserves.
     /// @param self Oracle state.
-    /// @param rawWelfare Current welfare from CPMM (in bps, before this trade).
+    /// @param rawPrice Current YES price from CPMM (in bps, before this trade).
     /// @param maxChangePerBlock Maximum bps the observation can move per block.
     /// @param blockNumber Current block number.
-    function update(State storage self, uint256 rawWelfare, uint256 maxChangePerBlock, uint256 blockNumber) internal {
+    function update(State storage self, uint256 rawPrice, uint256 maxChangePerBlock, uint256 blockNumber) internal {
         uint256 lastBlock = uint256(self.lastUpdateBlock);
         if (blockNumber <= lastBlock) return; // One update per block max
 
@@ -45,14 +45,14 @@ library TWAPOracle {
 
         // Compute clamped new observation
         uint256 newObs;
-        if (rawWelfare > lastObs) {
+        if (rawPrice > lastObs) {
             uint256 maxIncrease = maxChangePerBlock * blocksElapsed;
-            uint256 delta = rawWelfare - lastObs;
-            newObs = delta > maxIncrease ? lastObs + maxIncrease : rawWelfare;
+            uint256 delta = rawPrice - lastObs;
+            newObs = delta > maxIncrease ? lastObs + maxIncrease : rawPrice;
         } else {
             uint256 maxDecrease = maxChangePerBlock * blocksElapsed;
-            uint256 delta = lastObs - rawWelfare;
-            newObs = delta > maxDecrease ? lastObs - maxDecrease : rawWelfare;
+            uint256 delta = lastObs - rawPrice;
+            newObs = delta > maxDecrease ? lastObs - maxDecrease : rawPrice;
         }
 
         // Clamp to valid bps range
@@ -74,9 +74,9 @@ library TWAPOracle {
         }
     }
 
-    /// @notice Read the TWAP welfare over the full trading period.
+    /// @notice Read the TWAP price over the full trading period.
     /// @param self Oracle state (after finalize).
-    /// @return twap Time-weighted average welfare in bps.
+    /// @return twap Time-weighted average YES price in bps.
     function readTwap(State storage self) internal view returns (uint256 twap) {
         uint256 totalBlocks = uint256(self.lastUpdateBlock) - uint256(self.startBlock);
         if (totalBlocks == 0) return uint256(self.lastObservation);

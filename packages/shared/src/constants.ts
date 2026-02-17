@@ -5,7 +5,8 @@ export const MONAD_TESTNET_EXPLORER = "https://testnet.monadexplorer.com";
 
 // Contract addresses -- updated after deployment
 export const MERIDIAN_CORE_ADDRESS = "0xDf7aeeC34d40aD437717eD60D97c52a2988A5662" as const;
-export const WELFARE_ORACLE_ADDRESS = "0x09dA408De4823C494d435ce1319B26283E6FcbEc" as const;
+export const WELFARE_ORACLE_ADDRESS = "0x857B842076187Deb7ED930f09E0F2fD23AeC9c92" as const;
+export const ORACLE_OWNER_ADDRESS = "0x30d5A633ab362b4bDd040BdECfefe2Ea3F29c00E" as const;
 
 // Protocol constants (must match MeridianCore.sol)
 export const FEE_BPS = 30;
