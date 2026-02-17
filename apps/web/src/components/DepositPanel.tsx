@@ -1,0 +1,101 @@
+"use client";
+
+import { useState } from "react";
+import { useAccount, useBalance } from "wagmi";
+import { formatEther, parseEther } from "viem";
+import { useDeposit, useWithdraw } from "@/hooks/useWrite";
+
+interface DepositPanelProps {
+  decisionId: bigint;
+  userDeposit: bigint | undefined;
+  status: number;
+}
+
+export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelProps) {
+  const { address } = useAccount();
+  const { data: balance } = useBalance({ address });
+  const [amount, setAmount] = useState("");
+  const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
+
+  const { deposit, isPending: depositPending, isConfirming: depositConfirming } = useDeposit();
+  const { withdraw, isPending: withdrawPending, isConfirming: withdrawConfirming } = useWithdraw();
+
+  const isOpen = status === 0;
+  const isPending = depositPending || withdrawPending;
+  const isConfirming = depositConfirming || withdrawConfirming;
+  const parsedAmount = amount ? parseEther(amount) : BigInt(0);
+  const hasAmount = parsedAmount > BigInt(0);
+
+  function handleSubmit() {
+    if (!hasAmount) return;
+    if (mode === "deposit") {
+      deposit(decisionId, amount);
+    } else {
+      withdraw(decisionId, parsedAmount);
+    }
+    setAmount("");
+  }
+
+  if (!address) return null;
+
+  return (
+    <div className="rounded-lg border border-meridian-border bg-meridian-surface p-6">
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+        Deposit / Withdraw
+      </h2>
+
+      {userDeposit !== undefined && userDeposit > BigInt(0) && (
+        <div className="mb-4 rounded bg-meridian-bg px-3 py-2 text-sm text-neutral-300">
+          Your deposit: <span className="font-mono text-meridian-gold">{formatEther(userDeposit)} MON</span>
+        </div>
+      )}
+
+      <div className="mb-3 flex gap-2">
+        <button
+          onClick={() => setMode("deposit")}
+          className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+            mode === "deposit"
+              ? "bg-yes/20 text-yes"
+              : "bg-neutral-800 text-neutral-500 hover:text-neutral-300"
+          }`}
+        >
+          Deposit
+        </button>
+        <button
+          onClick={() => setMode("withdraw")}
+          className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+            mode === "withdraw"
+              ? "bg-no/20 text-no"
+              : "bg-neutral-800 text-neutral-500 hover:text-neutral-300"
+          }`}
+        >
+          Withdraw
+        </button>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.0"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+          className="flex-1 rounded border border-meridian-border bg-meridian-bg px-3 py-2 font-mono text-sm text-white placeholder-neutral-600 focus:border-meridian-gold focus:outline-none"
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={!hasAmount || !isOpen || isPending || isConfirming}
+          className="rounded bg-meridian-gold px-4 py-2 text-sm font-medium text-meridian-bg transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          {isPending ? "Signing..." : isConfirming ? "Confirming..." : mode === "deposit" ? "Deposit" : "Withdraw"}
+        </button>
+      </div>
+
+      {balance && mode === "deposit" && (
+        <div className="mt-2 text-xs text-neutral-600">
+          Wallet: {Number(formatEther(balance.value)).toFixed(4)} MON
+        </div>
+      )}
+    </div>
+  );
+}

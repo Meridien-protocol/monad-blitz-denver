@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --meridian-gold: #D4A853;
+  --bg: #0A0A0F;
+}
+
+body {
+  background-color: var(--bg);
+  color: #e5e5e5;
+}
+
+/* Welfare pulse: glow effect when welfare updates */
+@keyframes welfare-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(212, 168, 83, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 168, 83, 0); }
+}
+
+.welfare-pulse {
+  animation: welfare-pulse 1s ease-out;
+}
+
+/* Universe collapse: shrink + fade for losing proposals */
+@keyframes universe-collapse {
+  0% { transform: scale(1); opacity: 1; }
+  60% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 0.3; filter: grayscale(1); }
+}
+
+.universe-collapsed {
+  animation: universe-collapse 0.8s ease-in forwards;
+}
+
+/* Smooth entrance for cards */
+@keyframes fade-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out;
+}
+
+/* Trade confirmation flash */
+@keyframes trade-flash {
+  0% { background-color: rgba(34, 197, 94, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.trade-flash-yes {
+  animation: trade-flash 0.6s ease-out;
+}
+
+@keyframes trade-flash-no {
+  0% { background-color: rgba(239, 68, 68, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.trade-flash-no {
+  animation: trade-flash-no 0.6s ease-out;
+}

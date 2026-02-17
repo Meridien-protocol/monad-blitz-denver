@@ -1,0 +1,34 @@
+node_modules/
+.next/
+.turbo/
+dist/
+out/
+build/
+cache/
+
+# Foundry
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/broadcast/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turborepo
+.turbo
+
+# TypeScript
+*.tsbuildinfo
