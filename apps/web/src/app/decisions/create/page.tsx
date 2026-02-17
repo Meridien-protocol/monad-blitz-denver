@@ -78,7 +78,7 @@ export default function CreateDecisionPage() {
     : 0;
 
   return (
-    <main className="mx-auto max-w-lg px-4 py-16">
+    <main className="relative z-10 mx-auto max-w-lg px-4 py-16">
         <h1 className="mb-8 text-2xl font-bold text-white">Create Decision</h1>
 
         {!isConnected ? (

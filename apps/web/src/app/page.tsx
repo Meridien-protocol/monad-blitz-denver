@@ -47,21 +47,25 @@ function DecisionCard({ decision: d }: { decision: DecisionItem }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5">
+    <Link
+      href={`/decisions/${d.id}`}
+      className="block rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5"
+    >
       <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
-          <Link
-            href={`/decisions/${d.id}`}
-            className="truncate text-sm font-semibold text-white hover:text-meridian-gold sm:text-base"
-          >
+          <span className="truncate text-sm font-semibold text-white sm:text-base">
             {d.title}
-          </Link>
+          </span>
           <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
             <span className="text-[11px] text-neutral-500 sm:text-xs">
               {d.proposalCount} proposal{d.proposalCount !== 1 ? "s" : ""}
             </span>
             <button
-              onClick={() => setExpanded((prev) => !prev)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setExpanded((prev) => !prev);
+              }}
               className="rounded border border-meridian-border px-2 py-0.5 text-[10px] text-neutral-400 transition-colors hover:border-meridian-gold/40 hover:text-meridian-gold sm:text-[11px]"
             >
               {expanded ? "Hide" : "Details"}
@@ -78,7 +82,7 @@ function DecisionCard({ decision: d }: { decision: DecisionItem }) {
           <span>Creator: {d.creator.slice(0, 6)}...{d.creator.slice(-4)}</span>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 

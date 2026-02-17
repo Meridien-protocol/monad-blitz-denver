@@ -124,6 +124,17 @@ body {
   transform: scale(0.9);
 }
 
+/* Slide-down expansion for inline proposal */
+@keyframes slide-down {
+  from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+  to { opacity: 1; max-height: 1000px; transform: translateY(0); }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.35s ease-out forwards;
+  overflow: hidden;
+}
+
 
 
 @layer base {
