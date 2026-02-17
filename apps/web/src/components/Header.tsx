@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CompassRoseLogo } from "@/components/CompassRoseLogo";
-import { BlockHeartbeat } from "@/components/BlockHeartbeat";
 
 export function Header() {
   return (
@@ -13,7 +12,6 @@ export function Header() {
           <CompassRoseLogo size={40} />
         </Link>
         <div className="flex items-center gap-4">
-          <BlockHeartbeat />
           <ConnectButton
             showBalance={false}
             chainStatus="icon"
