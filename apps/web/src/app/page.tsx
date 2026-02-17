@@ -10,6 +10,7 @@ import { useNextDecisionId, useDecisions } from "@/hooks/useContract";
 import dynamic from "next/dynamic";
 
 const DitheredImage = dynamic(() => import("@/components/DitheredImage"), { ssr: false });
+const SplitText = dynamic(() => import("@/components/SplitText"), { ssr: false });
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
@@ -28,6 +29,55 @@ function Crosshair({ className }: { className?: string }) {
     <span className={`absolute select-none text-[10px] text-white/30 ${className ?? ""}`}>
       +
     </span>
+  );
+}
+
+interface DecisionItem {
+  id: number;
+  creator: string;
+  deadline: number | bigint;
+  totalDeposits: bigint;
+  proposalCount: number;
+  status: number;
+  title: string;
+}
+
+function DecisionCard({ decision: d }: { decision: DecisionItem }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/decisions/${d.id}`}
+            className="truncate text-sm font-semibold text-white hover:text-meridian-gold sm:text-base"
+          >
+            {d.title}
+          </Link>
+          <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
+            <span className="text-[11px] text-neutral-500 sm:text-xs">
+              {d.proposalCount} proposal{d.proposalCount !== 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={() => setExpanded((prev) => !prev)}
+              className="rounded border border-meridian-border px-2 py-0.5 text-[10px] text-neutral-400 transition-colors hover:border-meridian-gold/40 hover:text-meridian-gold sm:text-[11px]"
+            >
+              {expanded ? "Hide" : "Details"}
+            </button>
+          </div>
+        </div>
+        <StatusBadge status={d.status} />
+      </div>
+
+      {expanded && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-meridian-border/50 pt-3 text-[11px] text-neutral-500 sm:text-xs">
+          <span>Deadline block: {d.deadline.toString()}</span>
+          <span>Deposits: {formatEther(d.totalDeposits)} MON</span>
+          <span>Creator: {d.creator.slice(0, 6)}...{d.creator.slice(-4)}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -82,12 +132,20 @@ export default function Home() {
             [ Meridian ]
           </p>
 
-          <h1 className="mt-4 text-center text-4xl leading-[1.1] text-white sm:mt-5 sm:text-5xl md:text-7xl lg:text-8xl">
-            <span className="font-serif italic text-meridian-gold">Vote</span>{" "}
-            the Future
-            <br />
-            into Being
-          </h1>
+          <SplitText
+            text="Vote the Future into Being"
+            className="mt-4 text-4xl leading-[1.1] text-white sm:mt-5 sm:text-5xl md:text-7xl lg:text-8xl"
+            tag="h1"
+            splitType="words"
+            delay={80}
+            duration={0.8}
+            ease="power3.out"
+            from={{ opacity: 0, y: 40 }}
+            to={{ opacity: 1, y: 0 }}
+            textAlign="center"
+            threshold={0.1}
+            rootMargin="-50px"
+          />
 
           <div className="mt-4 font-mono text-[9px] uppercase tracking-wider text-white/70 sm:mt-6 sm:text-[10px] md:text-xs">
             <span className="text-white/50">[ Quantum Futarchy ]</span>{" "}
@@ -137,32 +195,7 @@ export default function Home() {
             ) : (
               <div className="grid gap-3 sm:gap-4">
                 {decisions.map((d) => (
-                  <Link
-                    key={d!.id}
-                    href={`/decisions/${d!.id}`}
-                    className="group rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3 sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-semibold text-white group-hover:text-meridian-gold sm:text-base">
-                          {d!.title}
-                        </h3>
-                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-neutral-500 sm:mt-2 sm:gap-4 sm:text-xs">
-                          <span>
-                            {d!.proposalCount} proposal
-                            {d!.proposalCount !== 1 ? "s" : ""}
-                          </span>
-                          <span>
-                            {formatEther(d!.totalDeposits)} MON deposited
-                          </span>
-                          <span>
-                            Deadline block: {d!.deadline.toString()}
-                          </span>
-                        </div>
-                      </div>
-                      <StatusBadge status={d!.status} />
-                    </div>
-                  </Link>
+                  <DecisionCard key={d!.id} decision={d!} />
                 ))}
               </div>
             )}
