@@ -3,7 +3,6 @@
 import { use } from "react";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
-import { Header } from "@/components/Header";
 import { WelfareBar } from "@/components/WelfareBar";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TradePanel } from "@/components/TradePanel";
@@ -41,9 +40,7 @@ export default function ProposalPage({
   const hasPosition = position && (position[0] > BigInt(0) || position[1] > BigInt(0));
 
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-10">
         <div className="mb-2 flex items-center gap-3 text-xs text-neutral-600">
           <span>Decision #{id} / Proposal #{pidStr}</span>
           <BlockHeartbeat />
@@ -106,6 +103,5 @@ export default function ProposalPage({
           status={status}
         />
       </main>
-    </>
   );
 }

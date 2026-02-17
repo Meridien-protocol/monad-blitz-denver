@@ -2,12 +2,13 @@
 pragma solidity ^0.8.28;
 
 import "./interfaces/IMeridianCore.sol";
+import "./interfaces/IWelfareOracle.sol";
 import "./libraries/MeridianMath.sol";
 import "./libraries/TWAPOracle.sol";
 
 /// @title MeridianCore
 /// @notice Singleton contract for Quantum Futarchy on Monad.
-///         Mode A only: Proportional TWAP resolution, no oracle.
+///         Mode A: Proportional TWAP resolution. Mode B: Outcome-based oracle resolution.
 /// @dev All deposits are real MON. All trading is in virtual units tracked internally.
 contract MeridianCore is IMeridianCore {
     using TWAPOracle for TWAPOracle.State;
@@ -28,10 +29,22 @@ contract MeridianCore is IMeridianCore {
         uint48 createdAtBlock;
         uint128 totalDeposits;
         uint16 proposalCount;
-        uint8 status; // 0=OPEN, 1=COLLAPSED, 2=SETTLED
+        uint8 status; // 0=OPEN, 1=COLLAPSED, 2=SETTLED, 3=MEASURING, 4=RESOLVED, 5=DISPUTED
         uint16 winningProposalId;
         uint128 virtualLiquidity;
         string title;
+    }
+
+    struct DecisionB {
+        address welfareOracle;
+        address guardian;
+        uint48 measuringDeadline;
+        uint8 resolutionMode; // 0=MODE_A, 1=MODE_B
+        uint8 outcome; // 0=UNRESOLVED, 1=YES, 2=NO
+        uint128 mBaseline;
+        uint128 mActual;
+        uint256 minImprovement; // in bps
+        uint256 measurementPeriod; // in blocks
     }
 
     struct Proposal {
@@ -53,6 +66,7 @@ contract MeridianCore is IMeridianCore {
     uint256 public nextDecisionId;
 
     mapping(uint256 => Decision) public decisions;
+    mapping(uint256 => DecisionB) public decisionsB;
     mapping(uint256 => mapping(uint256 => Proposal)) public proposals;
     mapping(uint256 => mapping(uint256 => TWAPOracle.State)) internal oracles;
 
@@ -65,6 +79,7 @@ contract MeridianCore is IMeridianCore {
 
     // ============ Decision Lifecycle ============
 
+    /// @notice Create a Mode A decision (proportional TWAP resolution).
     function createDecision(string calldata title, uint256 durationInBlocks, uint256 virtualLiquidity)
         external
         returns (uint256 decisionId)
@@ -81,8 +96,55 @@ contract MeridianCore is IMeridianCore {
         d.createdAtBlock = uint48(block.number);
         d.virtualLiquidity = uint128(virtualLiquidity);
         d.title = title;
+        // decisionsB[decisionId].resolutionMode defaults to 0 (MODE_A)
 
         emit DecisionCreated(decisionId, msg.sender, title, d.deadline, virtualLiquidity);
+    }
+
+    /// @notice Create a Mode B decision (outcome-based oracle resolution).
+    function createDecision(
+        string calldata title,
+        uint256 durationInBlocks,
+        uint256 virtualLiquidity,
+        address welfareOracle,
+        uint256 measurementPeriod,
+        uint256 minImprovement,
+        address guardian
+    ) external returns (uint256 decisionId) {
+        require(bytes(title).length > 0, "empty title");
+        require(durationInBlocks > 0, "zero duration");
+        require(virtualLiquidity > 0, "zero liquidity");
+        require(welfareOracle != address(0), "zero oracle");
+        require(guardian != address(0), "zero guardian");
+        require(measurementPeriod > 0, "zero measurement period");
+
+        decisionId = nextDecisionId++;
+
+        Decision storage d = decisions[decisionId];
+        d.creator = msg.sender;
+        d.deadline = uint48(block.number + durationInBlocks);
+        d.createdAtBlock = uint48(block.number);
+        d.virtualLiquidity = uint128(virtualLiquidity);
+        d.title = title;
+
+        DecisionB storage db = decisionsB[decisionId];
+        db.resolutionMode = uint8(ResolutionMode.MODE_B);
+        db.welfareOracle = welfareOracle;
+        db.guardian = guardian;
+        db.measurementPeriod = measurementPeriod;
+        db.minImprovement = minImprovement;
+
+        emit DecisionCreatedB(
+            decisionId,
+            msg.sender,
+            title,
+            d.deadline,
+            virtualLiquidity,
+            welfareOracle,
+            guardian,
+            measurementPeriod,
+            minImprovement
+        );
     }
 
     function addProposal(uint256 decisionId, string calldata title) external returns (uint256 proposalId) {
@@ -279,22 +341,88 @@ contract MeridianCore is IMeridianCore {
             }
         }
 
-        d.status = uint8(Status.COLLAPSED);
         d.winningProposalId = uint16(bestProposal);
         winningTwapWelfare[decisionId] = bestTwap;
 
-        emit Collapsed(decisionId, bestProposal, bestTwap);
+        DecisionB storage db = decisionsB[decisionId];
+        if (db.resolutionMode == uint8(ResolutionMode.MODE_B)) {
+            // Mode B: snapshot baseline metric, transition to MEASURING
+            uint256 baseline = IWelfareOracle(db.welfareOracle).getMetric();
+            db.mBaseline = uint128(baseline);
+            db.measuringDeadline = uint48(block.number + db.measurementPeriod);
+            d.status = uint8(Status.MEASURING);
+
+            emit MeasurementStarted(decisionId, bestProposal, baseline, db.measuringDeadline);
+        } else {
+            // Mode A: standard collapse
+            d.status = uint8(Status.COLLAPSED);
+
+            emit Collapsed(decisionId, bestProposal, bestTwap);
+        }
+    }
+
+    /// @notice Resolve a Mode B decision by reading the welfare oracle after measurement period.
+    function resolve(uint256 decisionId) external {
+        Decision storage d = decisions[decisionId];
+        require(d.status == uint8(Status.MEASURING), "not measuring");
+
+        DecisionB storage db = decisionsB[decisionId];
+        require(block.number >= db.measuringDeadline, "measurement ongoing");
+
+        uint256 actual = IWelfareOracle(db.welfareOracle).getMetric();
+        db.mActual = uint128(actual);
+
+        // YES if actual * BPS >= baseline * (BPS + minImprovement), else NO
+        if (uint256(actual) * BPS >= uint256(db.mBaseline) * (BPS + db.minImprovement)) {
+            db.outcome = uint8(Outcome.YES);
+        } else {
+            db.outcome = uint8(Outcome.NO);
+        }
+
+        d.status = uint8(Status.RESOLVED);
+
+        emit Resolved(decisionId, db.outcome, db.mBaseline, uint128(actual));
+    }
+
+    /// @notice Guardian override for Mode B decisions (from MEASURING or RESOLVED state).
+    function resolveDispute(uint256 decisionId, uint8 outcome) external {
+        Decision storage d = decisions[decisionId];
+        require(
+            d.status == uint8(Status.MEASURING) || d.status == uint8(Status.RESOLVED),
+            "not measuring or resolved"
+        );
+
+        DecisionB storage db = decisionsB[decisionId];
+        require(msg.sender == db.guardian, "not guardian");
+        require(outcome == uint8(Outcome.YES) || outcome == uint8(Outcome.NO), "invalid outcome");
+
+        db.outcome = outcome;
+        d.status = uint8(Status.RESOLVED);
+
+        emit DisputeResolved(decisionId, msg.sender, outcome);
     }
 
     function settle(uint256 decisionId) external {
         Decision storage d = decisions[decisionId];
-        require(d.status == uint8(Status.COLLAPSED), "not collapsed");
+        DecisionB storage db = decisionsB[decisionId];
+
+        if (db.resolutionMode == uint8(ResolutionMode.MODE_B)) {
+            require(d.status == uint8(Status.RESOLVED), "not resolved");
+        } else {
+            require(d.status == uint8(Status.COLLAPSED), "not collapsed");
+        }
+
         require(!settled[decisionId][msg.sender], "already settled");
         require(deposits[decisionId][msg.sender] > 0, "no deposit");
 
         settled[decisionId][msg.sender] = true;
 
-        uint256 payout = _calcPayout(decisionId, d.winningProposalId, msg.sender);
+        uint256 payout;
+        if (db.resolutionMode == uint8(ResolutionMode.MODE_B)) {
+            payout = _calcPayoutB(decisionId, d.winningProposalId, msg.sender, db.outcome);
+        } else {
+            payout = _calcPayout(decisionId, d.winningProposalId, msg.sender);
+        }
 
         if (payout > 0) {
             (bool ok,) = msg.sender.call{value: payout}("");
@@ -337,6 +465,35 @@ contract MeridianCore is IMeridianCore {
     {
         Proposal storage p = proposals[decisionId][proposalId];
         return (p.yesReserve, p.noReserve, p.totalVMonMinted, p.totalVolume, p.title);
+    }
+
+    function getDecisionB(uint256 decisionId)
+        external
+        view
+        returns (
+            address welfareOracle,
+            address guardian,
+            uint48 measuringDeadline,
+            uint8 resolutionMode,
+            uint8 outcome,
+            uint128 mBaseline,
+            uint128 mActual,
+            uint256 minImprovement,
+            uint256 measurementPeriod
+        )
+    {
+        DecisionB storage db = decisionsB[decisionId];
+        return (
+            db.welfareOracle,
+            db.guardian,
+            db.measuringDeadline,
+            db.resolutionMode,
+            db.outcome,
+            db.mBaseline,
+            db.mActual,
+            db.minImprovement,
+            db.measurementPeriod
+        );
     }
 
     // ============ Internal ============
@@ -384,6 +541,7 @@ contract MeridianCore is IMeridianCore {
         claimed[decisionId][proposalId][user] += amount;
     }
 
+    /// @dev Mode A payout: proportional TWAP settlement.
     function _calcPayout(uint256 decisionId, uint16 winningId, address user) internal view returns (uint256 payout) {
         uint256 userDeposit = deposits[decisionId][user];
         uint256 W = winningTwapWelfare[decisionId];
@@ -395,6 +553,37 @@ contract MeridianCore is IMeridianCore {
             uint256 yesValue = (uint256(pos.yesBalance) * W) / BPS;
             uint256 noValue = (uint256(pos.noBalance) * (BPS - W)) / BPS;
             pnl = int256(yesValue + noValue) - int256(uint256(pos.vMonSpent));
+        }
+
+        if (pnl >= 0) {
+            payout = userDeposit + uint256(pnl);
+        } else {
+            uint256 loss = uint256(-pnl);
+            payout = loss >= userDeposit ? 0 : userDeposit - loss;
+        }
+    }
+
+    /// @dev Mode B payout: binary settlement based on oracle outcome.
+    ///      YES outcome: YES tokens pay 1:1, NO tokens pay 0.
+    ///      NO outcome:  NO tokens pay 1:1, YES tokens pay 0.
+    function _calcPayoutB(uint256 decisionId, uint16 winningId, address user, uint8 outcome)
+        internal
+        view
+        returns (uint256 payout)
+    {
+        uint256 userDeposit = deposits[decisionId][user];
+
+        Position storage pos = positions[decisionId][uint256(winningId)][user];
+        int256 pnl;
+
+        if (pos.yesBalance > 0 || pos.noBalance > 0) {
+            uint256 tokenValue;
+            if (outcome == uint8(Outcome.YES)) {
+                tokenValue = uint256(pos.yesBalance);
+            } else {
+                tokenValue = uint256(pos.noBalance);
+            }
+            pnl = int256(tokenValue) - int256(uint256(pos.vMonSpent));
         }
 
         if (pnl >= 0) {

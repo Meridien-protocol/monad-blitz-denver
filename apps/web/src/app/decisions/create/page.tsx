@@ -6,7 +6,6 @@ import { useAccount } from "wagmi";
 import { parseEther, decodeEventLog } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MeridianCoreABI } from "@meridian/shared";
-import { Header } from "@/components/Header";
 import { useCreateDecision } from "@/hooks/useWrite";
 
 const BLOCKS_PER_HOUR = 7200;
@@ -79,9 +78,7 @@ export default function CreateDecisionPage() {
     : 0;
 
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-lg px-4 py-16">
+    <main className="mx-auto max-w-lg px-4 py-16">
         <h1 className="mb-8 text-2xl font-bold text-white">Create Decision</h1>
 
         {!isConnected ? (

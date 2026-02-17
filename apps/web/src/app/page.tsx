@@ -1,16 +1,27 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
-import { Header } from "@/components/Header";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useNextDecisionId, useDecisions } from "@/hooks/useContract";
 import dynamic from "next/dynamic";
 
-const LiquidChrome = dynamic(() => import("@/components/LiquidChrome"), { ssr: false });
+const DitheredImage = dynamic(() => import("@/components/DitheredImage"), { ssr: false });
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const onChange = () => setIsMobile(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 function Crosshair({ className }: { className?: string }) {
   return (
@@ -21,6 +32,7 @@ function Crosshair({ className }: { className?: string }) {
 }
 
 export default function Home() {
+  const isMobile = useIsMobile();
   const { isConnected } = useAccount();
   const { data: nextId } = useNextDecisionId();
   const count = nextId ? Number(nextId) : 0;
@@ -37,86 +49,76 @@ export default function Home() {
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <LiquidChrome
-          baseColor={[0.02, 0.008, 0.001]}
-          speed={0.35}
-          amplitude={0.4}
-          frequencyX={4}
-          frequencyY={4}
-          interactive
+      {/* Full-screen dithered background */}
+      <div className="fixed inset-0 z-0">
+        <DitheredImage
+          src="/revolution.png"
+          colorNum={4}
+          pixelSize={isMobile ? 2 : 3}
+          distortion={0.003}
+          tint={[1.3, 1.05, 0.8]}
+          tintStrength={0.35}
+          focusX={isMobile ? 0.55 : 0.5}
+          focusY={isMobile ? 0.35 : 0.5}
         />
+        {/* Darkening overlay for readability */}
+        <div className="pointer-events-none absolute inset-0 bg-meridian-bg/60" />
+        {/* Bottom gradient fade */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-meridian-bg via-transparent to-meridian-bg/40" />
+
+        {/* Crosshair markers -- hidden on small screens to reduce clutter */}
+        <Crosshair className="hidden sm:block left-[8%] top-[12%]" />
+        <Crosshair className="hidden sm:block right-[10%] top-[15%]" />
+        <Crosshair className="left-[15%] bottom-[25%]" />
+        <Crosshair className="right-[12%] bottom-[30%]" />
+        <Crosshair className="hidden sm:block left-[50%] top-[8%]" />
+        <Crosshair className="hidden sm:block right-[35%] bottom-[18%]" />
       </div>
-      <Header />
-      <main className="mx-auto max-w-5xl px-4 py-16">
+
+      <main className="relative z-10 mx-auto max-w-5xl px-3 py-8 sm:px-4 sm:py-16">
         {/* Hero Section */}
-        <section className="flex flex-col items-center pt-8 pb-0">
-          <p className="text-center font-mono text-[11px] uppercase tracking-[0.35em] text-neutral-500">
+        <section className="flex flex-col items-center pt-10 pb-0 sm:pt-24">
+          <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-neutral-400 sm:text-[11px] sm:tracking-[0.35em]">
             [ Meridian ]
           </p>
 
-          <h1 className="mt-5 text-center text-5xl leading-[1.1] text-white md:text-7xl lg:text-8xl">
+          <h1 className="mt-4 text-center text-4xl leading-[1.1] text-white sm:mt-5 sm:text-5xl md:text-7xl lg:text-8xl">
             <span className="font-serif italic text-meridian-gold">Vote</span>{" "}
             the Future
             <br />
             into Being
           </h1>
 
-          {/* Image container */}
-          <div className="relative mt-12 w-full overflow-hidden rounded-sm border border-white/5">
-            <Image
-              src="/revolution.png"
-              alt="Liberty Leading the People"
-              width={1200}
-              height={675}
-              className="block w-full object-cover"
-              priority
-            />
-
-            {/* Gradient overlay at bottom */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-meridian-bg/80 via-transparent to-transparent" />
-
-            {/* Crosshair markers */}
-            <Crosshair className="left-[8%] top-[12%]" />
-            <Crosshair className="right-[10%] top-[15%]" />
-            <Crosshair className="left-[15%] bottom-[25%]" />
-            <Crosshair className="right-[12%] bottom-[30%]" />
-            <Crosshair className="left-[50%] top-[8%]" />
-            <Crosshair className="right-[35%] bottom-[18%]" />
-
-            {/* Bottom-left monospace overlay */}
-            <div className="absolute bottom-4 left-4 font-mono text-[10px] uppercase tracking-wider text-white/70 md:bottom-6 md:left-6 md:text-xs">
-              <span className="text-white/50">[ Quantum Futarchy ]</span>{" "}
-              <span className="text-meridian-gold/80">on Monad</span>
-            </div>
+          <div className="mt-4 font-mono text-[9px] uppercase tracking-wider text-white/70 sm:mt-6 sm:text-[10px] md:text-xs">
+            <span className="text-white/50">[ Quantum Futarchy ]</span>{" "}
+            <span className="text-meridian-gold/80">on Monad</span>
           </div>
 
-          {/* Tagline below image */}
-          <p className="mt-8 max-w-lg text-center text-sm leading-relaxed text-neutral-500">
+          <p className="mt-6 max-w-lg px-2 text-center text-xs leading-relaxed text-neutral-400 sm:mt-8 sm:px-0 sm:text-sm">
             Capital-efficient prediction market governance where
             collective intelligence guides every decision.
           </p>
 
           {!isConnected && (
-            <div className="mt-6 flex flex-col items-center gap-4">
+            <div className="mt-5 flex flex-col items-center gap-4 sm:mt-6">
               <ConnectButton />
             </div>
           )}
         </section>
 
         {/* Thin separator line */}
-        <div className="mx-auto my-16 h-px w-full max-w-md bg-gradient-to-r from-transparent via-meridian-gold/30 to-transparent" />
+        <div className="mx-auto my-10 h-px w-full max-w-md bg-gradient-to-r from-transparent via-meridian-gold/30 to-transparent sm:my-16" />
 
         {/* Decisions Section */}
         {isConnected && (
           <section>
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-neutral-300">
+            <div className="mb-4 flex items-center justify-between sm:mb-6">
+              <h2 className="text-base font-semibold text-neutral-300 sm:text-lg">
                 Decisions{count > 0 ? ` (${count})` : ""}
               </h2>
               <Link
                 href="/decisions/create"
-                className="rounded bg-meridian-gold px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-meridian-gold/90"
+                className="rounded bg-meridian-gold px-3 py-1.5 text-xs font-bold text-black transition-colors hover:bg-meridian-gold/90 sm:px-4 sm:py-2 sm:text-sm"
               >
                 Create Decision
               </Link>
@@ -127,25 +129,25 @@ export default function Home() {
                 Loading decisions...
               </div>
             ) : decisions.length === 0 ? (
-              <div className="rounded-lg border border-meridian-border bg-meridian-surface p-8 text-center">
-                <p className="text-sm text-neutral-400">
+              <div className="rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-6 text-center sm:p-8">
+                <p className="text-xs text-neutral-400 sm:text-sm">
                   No decisions yet. Create the first one to get started.
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3 sm:gap-4">
                 {decisions.map((d) => (
                   <Link
                     key={d!.id}
                     href={`/decisions/${d!.id}`}
-                    className="group rounded-lg border border-meridian-border bg-meridian-surface p-5 transition-colors hover:border-meridian-gold/40"
+                    className="group rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start justify-between gap-3 sm:gap-4">
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-base font-semibold text-white group-hover:text-meridian-gold">
+                        <h3 className="truncate text-sm font-semibold text-white group-hover:text-meridian-gold sm:text-base">
                           {d!.title}
                         </h3>
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-neutral-500">
+                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-neutral-500 sm:mt-2 sm:gap-4 sm:text-xs">
                           <span>
                             {d!.proposalCount} proposal
                             {d!.proposalCount !== 1 ? "s" : ""}

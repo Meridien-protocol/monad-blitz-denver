@@ -1,0 +1,4 @@
+{
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @meridian/shared build && cd apps/web && next build"
+}

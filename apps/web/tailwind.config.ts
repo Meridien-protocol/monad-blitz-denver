@@ -14,8 +14,8 @@ const config: Config = {
   				surface: '#12121A',
   				border: '#1E1E2A'
   			},
-  			yes: '#22C55E',
-  			no: '#EF4444',
+  			yes: '#8BAA6E',
+  			no: '#C4604A',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

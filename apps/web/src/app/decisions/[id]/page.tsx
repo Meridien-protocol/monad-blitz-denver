@@ -3,7 +3,6 @@
 import { use } from "react";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
-import { Header } from "@/components/Header";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ProposalCard } from "@/components/ProposalCard";
 import { DeltaDisplay } from "@/components/DeltaDisplay";
@@ -32,23 +31,17 @@ export default function DecisionPage({
 
   if (decisionLoading) {
     return (
-      <>
-        <Header />
-        <main className="mx-auto max-w-5xl px-4 py-16">
-          <div className="animate-pulse text-neutral-500">Loading decision...</div>
-        </main>
-      </>
+      <main className="mx-auto max-w-5xl px-4 py-16">
+        <div className="animate-pulse text-neutral-500">Loading decision...</div>
+      </main>
     );
   }
 
   if (!decision) {
     return (
-      <>
-        <Header />
-        <main className="mx-auto max-w-5xl px-4 py-16">
-          <p className="text-neutral-500">Decision not found.</p>
-        </main>
-      </>
+      <main className="mx-auto max-w-5xl px-4 py-16">
+        <p className="text-neutral-500">Decision not found.</p>
+      </main>
     );
   }
 
@@ -64,9 +57,7 @@ export default function DecisionPage({
       }) ?? [];
 
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-5xl px-4 py-10">
+    <main className="mx-auto max-w-5xl px-4 py-10">
         <div className="mb-8">
           <div className="mb-3 flex items-center gap-3">
             <StatusBadge status={status} />
@@ -145,6 +136,5 @@ export default function DecisionPage({
           <TradeFeedTicker />
         </section>
       </main>
-    </>
   );
 }
