@@ -2,39 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const CURTAIN_SESSION_KEY = "meridian_curtain_shown";
-
 interface LoadingCurtainProps {
   isReady: boolean;
 }
 
 export default function LoadingCurtain({ isReady }: LoadingCurtainProps) {
-  const [shouldShow, setShouldShow] = useState(false);
   const [fading, setFading] = useState(false);
   const [removed, setRemoved] = useState(false);
 
   useEffect(() => {
-    try {
-      if (!sessionStorage.getItem(CURTAIN_SESSION_KEY)) {
-        setShouldShow(true);
-      } else {
-        setRemoved(true);
-      }
-    } catch {
-      setRemoved(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isReady || !shouldShow) return;
-    // Mark session so curtain doesn't show again
-    try {
-      sessionStorage.setItem(CURTAIN_SESSION_KEY, "1");
-    } catch {}
-    // Small delay so the background has a frame painted
+    if (!isReady) return;
     const t = setTimeout(() => setFading(true), 100);
     return () => clearTimeout(t);
-  }, [isReady, shouldShow]);
+  }, [isReady]);
 
   const handleTransitionEnd = useCallback(() => {
     if (fading) setRemoved(true);
@@ -50,7 +30,7 @@ export default function LoadingCurtain({ isReady }: LoadingCurtainProps) {
       onTransitionEnd={handleTransitionEnd}
     >
       {/* Spinning compass */}
-      <div className="curtain-spin h-20 w-20 sm:h-28 sm:w-28">
+      <div className="curtain-spin h-16 w-16 sm:h-24 sm:w-24 md:h-28 md:w-28">
         <img
           src="/meridian-logo.svg"
           alt=""
@@ -60,7 +40,7 @@ export default function LoadingCurtain({ isReady }: LoadingCurtainProps) {
       </div>
 
       {/* Subtle label */}
-      <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.35em] text-neutral-500 sm:text-[11px]">
+      <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.3em] text-neutral-500 sm:mt-6 sm:text-[10px] sm:tracking-[0.35em] md:text-[11px]">
         [ Meridian ]
       </p>
     </div>

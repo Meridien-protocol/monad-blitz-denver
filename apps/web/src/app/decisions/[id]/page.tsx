@@ -11,8 +11,9 @@ import { SettlementPanel } from "@/components/SettlementPanel";
 import { TradeFeedTicker } from "@/components/TradeFeedTicker";
 import { BlockHeartbeat } from "@/components/BlockHeartbeat";
 import { AddProposalForm } from "@/components/AddProposalForm";
-import { useDecision, useProposals, useUserDeposit, useSettled } from "@/hooks/useContract";
-import { welfare, MAX_PROPOSALS } from "@meridian/shared";
+import { OracleControlPanel } from "@/components/OracleControlPanel";
+import { useDecision, useDecisionB, useProposals, useUserDeposit, useSettled } from "@/hooks/useContract";
+import { welfare, MAX_PROPOSALS, ResolutionMode, DecisionStatus } from "@meridian/shared";
 
 export default function DecisionPage({
   params,
@@ -28,6 +29,13 @@ export default function DecisionPage({
   const { data: proposalsData, isLoading: proposalsLoading } = useProposals(decisionId, proposalCount);
   const { data: userDeposit } = useUserDeposit(address, decisionId);
   const { data: isSettled } = useSettled(address, decisionId);
+  const { data: decisionB } = useDecisionB(decisionId);
+
+  const isModeB = decisionB ? Number(decisionB[3]) === ResolutionMode.MODE_B : false;
+  const oracleAddress = decisionB ? (decisionB[0] as string) : "";
+  const mBaseline = decisionB ? (decisionB[5] as bigint) : BigInt(0);
+  const minImprovement = decisionB ? (decisionB[7] as bigint) : BigInt(0);
+  const measuringDeadline = decisionB ? Number(decisionB[2]) : 0;
 
   if (decisionLoading) {
     return (
@@ -128,6 +136,21 @@ export default function DecisionPage({
             settled={!!isSettled}
           />
         </div>
+
+        {isModeB && (
+          status === DecisionStatus.OPEN ||
+          status === DecisionStatus.MEASURING ||
+          status === DecisionStatus.RESOLVED
+        ) && (
+          <div className="mt-6">
+            <OracleControlPanel
+              oracleAddress={oracleAddress}
+              mBaseline={mBaseline}
+              minImprovement={minImprovement}
+              measuringDeadline={measuringDeadline}
+            />
+          </div>
+        )}
 
         <section className="mt-8 rounded-lg border border-meridian-border bg-meridian-surface p-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
