@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
@@ -11,6 +11,7 @@ import dynamic from "next/dynamic";
 
 const DitheredImage = dynamic(() => import("@/components/DitheredImage"), { ssr: false });
 const SplitText = dynamic(() => import("@/components/SplitText"), { ssr: false });
+const LoadingCurtain = dynamic(() => import("@/components/LoadingCurtain"), { ssr: false });
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
@@ -83,6 +84,8 @@ function DecisionCard({ decision: d }: { decision: DecisionItem }) {
 
 export default function Home() {
   const isMobile = useIsMobile();
+  const [bgReady, setBgReady] = useState(false);
+  const handleBgReady = useCallback(() => setBgReady(true), []);
   const { isConnected } = useAccount();
   const { data: nextId } = useNextDecisionId();
   const count = nextId ? Number(nextId) : 0;
@@ -99,6 +102,8 @@ export default function Home() {
 
   return (
     <>
+      <LoadingCurtain isReady={bgReady} />
+
       {/* Full-screen dithered background */}
       <div className="fixed inset-0 z-0">
         <DitheredImage
@@ -110,6 +115,7 @@ export default function Home() {
           tintStrength={0.35}
           focusX={isMobile ? 0.55 : 0.5}
           focusY={isMobile ? 0.35 : 0.5}
+          onReady={handleBgReady}
         />
         {/* Darkening overlay for readability */}
         <div className="pointer-events-none absolute inset-0 bg-meridian-bg/60" />

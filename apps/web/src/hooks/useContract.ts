@@ -82,6 +82,14 @@ export function useProposalData(decisionId: bigint, proposalId: number) {
   });
 }
 
+export function useDecisionB(decisionId: bigint) {
+  return useReadContract({
+    ...CONTRACT,
+    functionName: "getDecisionB",
+    args: [decisionId],
+  });
+}
+
 export function useNextDecisionId() {
   return useReadContract({
     ...CONTRACT,

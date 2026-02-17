@@ -109,6 +109,36 @@ export function useSettle() {
   return { settle, hash, isPending, isConfirming, isSuccess, error };
 }
 
+export function useResolve() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  function resolve(decisionId: bigint) {
+    writeContract({
+      ...CONTRACT,
+      functionName: "resolve",
+      args: [decisionId],
+    });
+  }
+
+  return { resolve, hash, isPending, isConfirming, isSuccess, error };
+}
+
+export function useResolveDispute() {
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  function resolveDispute(decisionId: bigint, outcome: number) {
+    writeContract({
+      ...CONTRACT,
+      functionName: "resolveDispute",
+      args: [decisionId, outcome],
+    });
+  }
+
+  return { resolveDispute, hash, isPending, isConfirming, isSuccess, error };
+}
+
 export function useCreateDecision() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });

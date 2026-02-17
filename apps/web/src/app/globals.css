@@ -63,6 +63,16 @@ body {
   animation: trade-flash-no 0.6s ease-out;
 }
 
+/* Loading curtain compass spin */
+@keyframes curtain-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.curtain-spin {
+  animation: curtain-spin 4s linear infinite;
+}
+
 
 
 @layer base {

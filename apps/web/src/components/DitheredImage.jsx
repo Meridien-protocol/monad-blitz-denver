@@ -1,4 +1,4 @@
-import { useRef, useMemo, Suspense } from 'react';
+import { useRef, useMemo, useCallback, Suspense } from 'react';
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -93,8 +93,9 @@ void main() {
 }
 `;
 
-function ImagePlane({ src, distortion, tint, tintStrength, colorNum, pixelSize, focusX, focusY }) {
+function ImagePlane({ src, distortion, tint, tintStrength, colorNum, pixelSize, focusX, focusY, onReady }) {
   const mesh = useRef(null);
+  const readyFired = useRef(false);
   const { viewport, size, gl } = useThree();
   const texture = useLoader(THREE.TextureLoader, src);
 
@@ -113,6 +114,10 @@ function ImagePlane({ src, distortion, tint, tintStrength, colorNum, pixelSize, 
     uniforms.uTime.value = clock.getElapsedTime();
     const dpr = gl.getPixelRatio();
     uniforms.uResolution.value.set(size.width * dpr, size.height * dpr);
+    if (!readyFired.current && onReady) {
+      readyFired.current = true;
+      onReady();
+    }
   });
 
   const imageAspect = texture.image ? texture.image.width / texture.image.height : 16 / 9;
@@ -152,6 +157,7 @@ export default function DitheredImage({
   tintStrength = 0.3,
   focusX = 0.5,
   focusY = 0.5,
+  onReady,
 }) {
   return (
     <Canvas
@@ -170,6 +176,7 @@ export default function DitheredImage({
           pixelSize={pixelSize}
           focusX={focusX}
           focusY={focusY}
+          onReady={onReady}
         />
       </Suspense>
     </Canvas>
