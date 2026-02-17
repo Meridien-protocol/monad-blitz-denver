@@ -81,3 +81,23 @@ export function useProposalData(decisionId: bigint, proposalId: number) {
     args: [decisionId, BigInt(proposalId)],
   });
 }
+
+export function useNextDecisionId() {
+  return useReadContract({
+    ...CONTRACT,
+    functionName: "nextDecisionId",
+  });
+}
+
+export function useDecisions(count: number) {
+  const contracts = Array.from({ length: count }, (_, i) => ({
+    ...CONTRACT,
+    functionName: "decisions" as const,
+    args: [BigInt(i)] as const,
+  }));
+
+  return useReadContracts({
+    contracts,
+    query: { enabled: count > 0 },
+  });
+}
