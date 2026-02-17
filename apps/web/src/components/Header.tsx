@@ -9,11 +9,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-meridian-border bg-meridian-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2.5">
-          <CompassRoseLogo size={28} />
-          <span className="text-lg font-semibold tracking-tight text-meridian-gold">
-            Meridian
-          </span>
+        <Link href="/" className="flex items-center">
+          <CompassRoseLogo size={120} />
         </Link>
         <div className="flex items-center gap-4">
           <BlockHeartbeat />
