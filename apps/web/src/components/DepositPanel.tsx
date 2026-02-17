@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { formatEther, parseEther } from "viem";
 import { useDeposit, useWithdraw } from "@/hooks/useWrite";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 
 interface DepositPanelProps {
   decisionId: bigint;
@@ -39,7 +41,7 @@ export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelPr
   if (!address) return null;
 
   return (
-    <div className="rounded-lg border border-meridian-border bg-meridian-surface p-6">
+    <DitheredCard innerClassName="p-6">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-500">
         Deposit / Withdraw
       </h2>
@@ -82,13 +84,14 @@ export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelPr
           onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
           className="flex-1 rounded border border-meridian-border bg-meridian-bg px-3 py-2 font-mono text-sm text-white placeholder-neutral-600 focus:border-meridian-gold focus:outline-none"
         />
-        <button
+        <DitheredButton
           onClick={handleSubmit}
+          variant="gold"
+          size="md"
           disabled={!hasAmount || !isOpen || isPending || isConfirming}
-          className="rounded bg-meridian-gold px-4 py-2 text-sm font-medium text-meridian-bg transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {isPending ? "Signing..." : isConfirming ? "Confirming..." : mode === "deposit" ? "Deposit" : "Withdraw"}
-        </button>
+        </DitheredButton>
       </div>
 
       {balance && mode === "deposit" && (
@@ -96,6 +99,6 @@ export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelPr
           Wallet: {Number(formatEther(balance.value)).toFixed(4)} MON
         </div>
       )}
-    </div>
+    </DitheredCard>
   );
 }

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   WelfareOracleABI,
   WELFARE_ORACLE_ADDRESS,
   BPS,
 } from "@meridian/shared";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 
 interface OracleControlPanelProps {
   oracleAddress: string;
@@ -38,8 +41,15 @@ export function OracleControlPanel({
     functionName: "lastUpdated",
   });
 
+  const queryClient = useQueryClient();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  useEffect(() => {
+    if (isSuccess) {
+      queryClient.invalidateQueries();
+    }
+  }, [isSuccess, queryClient]);
 
   function setMetric(value: bigint) {
     writeContract({
@@ -70,7 +80,7 @@ export function OracleControlPanel({
   ];
 
   return (
-    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-6">
+    <DitheredCard variant="amber" innerClassName="bg-amber-500/5 p-6">
       <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-amber-400">
         Oracle Control Panel
       </h2>
@@ -137,13 +147,14 @@ export function OracleControlPanel({
           placeholder="Custom metric value"
           className="flex-1 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 focus:border-amber-500 focus:outline-none"
         />
-        <button
+        <DitheredButton
           onClick={handleSubmit}
+          variant="gold"
+          size="md"
           disabled={isPending || isConfirming || !metricInput}
-          className="rounded bg-amber-500 px-4 py-2 text-sm font-medium text-meridian-bg transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {isPending ? "Signing..." : isConfirming ? "Confirming..." : isSuccess ? "Set" : "Set Metric"}
-        </button>
+        </DitheredButton>
         <button
           onClick={() => refetchMetric()}
           className="rounded border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-400 transition-colors hover:border-neutral-600"
@@ -158,9 +169,9 @@ export function OracleControlPanel({
 
       {isSuccess && (
         <p className="mt-2 text-xs text-yes">
-          Metric updated. Click Refresh to see the new value.
+          Metric updated.
         </p>
       )}
-    </div>
+    </DitheredCard>
   );
 }

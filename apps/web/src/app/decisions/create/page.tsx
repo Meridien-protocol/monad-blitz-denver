@@ -7,6 +7,8 @@ import { parseEther, decodeEventLog } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MeridianCoreABI } from "@meridian/shared";
 import { useCreateDecision } from "@/hooks/useWrite";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 
 const BLOCKS_PER_HOUR = 7200;
 
@@ -82,16 +84,17 @@ export default function CreateDecisionPage() {
         <h1 className="mb-8 text-2xl font-bold text-white">Create Decision</h1>
 
         {!isConnected ? (
-          <div className="rounded-lg border border-meridian-border bg-meridian-surface p-8 text-center">
+          <DitheredCard innerClassName="p-8 text-center">
             <p className="mb-4 text-sm text-neutral-400">
               Connect your wallet to create a decision.
             </p>
             <ConnectButton />
-          </div>
+          </DitheredCard>
         ) : (
+          <DitheredCard innerClassName="p-6">
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 rounded-lg border border-meridian-border bg-meridian-surface p-6"
+            className="space-y-6"
           >
             <div>
               <label className="mb-1 block text-xs text-neutral-500">
@@ -166,8 +169,10 @@ export default function CreateDecisionPage() {
               </p>
             </div>
 
-            <button
+            <DitheredButton
               type="submit"
+              variant="gold"
+              size="lg"
               disabled={
                 !title.trim() ||
                 !durationValue ||
@@ -175,14 +180,14 @@ export default function CreateDecisionPage() {
                 isPending ||
                 isConfirming
               }
-              className="w-full rounded bg-meridian-gold py-3 text-sm font-bold text-black transition-colors hover:bg-meridian-gold/90 disabled:bg-meridian-gold/30 disabled:text-black/50"
+              className="w-full"
             >
               {isPending
                 ? "Signing..."
                 : isConfirming
                   ? "Confirming..."
                   : "Create Decision"}
-            </button>
+            </DitheredButton>
 
             {error && (
               <p className="text-center text-xs text-no">
@@ -190,6 +195,7 @@ export default function CreateDecisionPage() {
               </p>
             )}
           </form>
+          </DitheredCard>
         )}
       </main>
   );

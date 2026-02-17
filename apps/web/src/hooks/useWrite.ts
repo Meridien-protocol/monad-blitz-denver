@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { parseEther } from "viem";
 import { MeridianCoreABI, MERIDIAN_CORE_ADDRESS } from "@meridian/shared";
 
@@ -9,9 +11,33 @@ const CONTRACT = {
   abi: MeridianCoreABI,
 } as const;
 
+/** Shared write helper: wraps useWriteContract + useWaitForTransactionReceipt
+ *  and invalidates all queries once the tx is confirmed. */
+function useContractWrite() {
+  const queryClient = useQueryClient();
+  const write = useWriteContract();
+  const receipt = useWaitForTransactionReceipt({ hash: write.data });
+
+  useEffect(() => {
+    if (receipt.isSuccess) {
+      queryClient.invalidateQueries();
+    }
+  }, [receipt.isSuccess, queryClient]);
+
+  return {
+    writeContract: write.writeContract,
+    hash: write.data,
+    isPending: write.isPending,
+    error: write.error,
+    reset: write.reset,
+    isConfirming: receipt.isLoading,
+    isSuccess: receipt.isSuccess,
+    receipt: receipt.data,
+  };
+}
+
 export function useDeposit() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function deposit(decisionId: bigint, amountEth: string) {
     writeContract({
@@ -26,8 +52,7 @@ export function useDeposit() {
 }
 
 export function useWithdraw() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function withdraw(decisionId: bigint, amount: bigint) {
     writeContract({
@@ -41,8 +66,7 @@ export function useWithdraw() {
 }
 
 export function useTrade() {
-  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
 
   function buyYes(decisionId: bigint, proposalId: bigint, amount: bigint, minOut: bigint) {
     writeContract({
@@ -80,8 +104,7 @@ export function useTrade() {
 }
 
 export function useCollapse() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function collapse(decisionId: bigint) {
     writeContract({
@@ -95,8 +118,7 @@ export function useCollapse() {
 }
 
 export function useSettle() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function settle(decisionId: bigint) {
     writeContract({
@@ -110,8 +132,7 @@ export function useSettle() {
 }
 
 export function useResolve() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function resolve(decisionId: bigint) {
     writeContract({
@@ -125,8 +146,7 @@ export function useResolve() {
 }
 
 export function useResolveDispute() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
   function resolveDispute(decisionId: bigint, outcome: number) {
     writeContract({
@@ -140,8 +160,7 @@ export function useResolveDispute() {
 }
 
 export function useCreateDecision() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const receipt = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, receipt, error } = useContractWrite();
 
   function createDecision(title: string, durationInBlocks: bigint, virtualLiquidity: bigint) {
     writeContract({
@@ -151,12 +170,11 @@ export function useCreateDecision() {
     });
   }
 
-  return { createDecision, hash, isPending, isConfirming: receipt.isLoading, isSuccess: receipt.isSuccess, receipt: receipt.data, error };
+  return { createDecision, hash, isPending, isConfirming, isSuccess, receipt, error };
 }
 
 export function useAddProposal() {
-  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
 
   function addProposal(decisionId: bigint, title: string) {
     writeContract({

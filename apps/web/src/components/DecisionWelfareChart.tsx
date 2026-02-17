@@ -12,6 +12,7 @@ import {
   useMultiWelfareHistory,
   type Timeframe,
 } from "@/hooks/useMultiWelfareHistory";
+import { DitheredCard } from "@/components/DitheredCard";
 
 const PROPOSAL_COLORS = [
   "#8BAA6E",
@@ -114,7 +115,7 @@ export function DecisionWelfareChart({
   );
 
   return (
-    <section className="rounded-lg border border-meridian-border bg-meridian-surface p-6">
+    <DitheredCard innerClassName="p-6">
       <div className="mb-4 flex items-end justify-between">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500">
@@ -249,6 +250,6 @@ export function DecisionWelfareChart({
           </AreaChart>
         </ChartContainer>
       )}
-    </section>
+    </DitheredCard>
   );
 }

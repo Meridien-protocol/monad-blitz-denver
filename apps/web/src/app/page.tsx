@@ -8,6 +8,7 @@ import { formatEther } from "viem";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useNextDecisionId, useDecisions } from "@/hooks/useContract";
 import dynamic from "next/dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 
 const DitheredImage = dynamic(() => import("@/components/DitheredImage"), { ssr: false });
 const SplitText = dynamic(() => import("@/components/SplitText"), { ssr: false });
@@ -47,9 +48,10 @@ function DecisionCard({ decision: d }: { decision: DecisionItem }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
+    <DitheredCard variant="gold">
     <Link
       href={`/decisions/${d.id}`}
-      className="block rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors hover:border-meridian-gold/40 sm:p-5"
+      className="block rounded-[calc(0.5rem-2px)] bg-meridian-surface/80 backdrop-blur-sm p-3.5 transition-colors sm:p-5"
     >
       <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0 flex-1">
@@ -83,6 +85,7 @@ function DecisionCard({ decision: d }: { decision: DecisionItem }) {
         </div>
       )}
     </Link>
+  </DitheredCard>
   );
 }
 
@@ -197,11 +200,11 @@ export default function Home() {
                 Loading decisions...
               </div>
             ) : decisions.length === 0 ? (
-              <div className="rounded-lg border border-meridian-border bg-meridian-surface/80 backdrop-blur-sm p-6 text-center sm:p-8">
+              <DitheredCard variant="gold" innerClassName="bg-meridian-surface/80 backdrop-blur-sm p-6 text-center sm:p-8">
                 <p className="text-xs text-neutral-400 sm:text-sm">
                   No decisions yet. Create the first one to get started.
                 </p>
-              </div>
+              </DitheredCard>
             ) : (
               <div className="grid gap-3 sm:gap-4">
                 {decisions.map((d) => (

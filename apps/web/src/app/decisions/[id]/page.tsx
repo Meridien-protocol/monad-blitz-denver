@@ -18,8 +18,9 @@ import { DecisionWelfareChart } from "@/components/DecisionWelfareChart";
 import { ExpandedProposal } from "@/components/ExpandedProposal";
 import { DeadlineProgress } from "@/components/DeadlineProgress";
 import { ShareButton } from "@/components/ShareButton";
+import { DitheredCard } from "@/components/DitheredCard";
 import { useDecision, useDecisionB, useProposals, useUserDeposit, useSettled } from "@/hooks/useContract";
-import { welfare, MAX_PROPOSALS, ResolutionMode, DecisionStatus } from "@meridian/shared";
+import { welfare, MAX_PROPOSALS, ResolutionMode, DecisionStatus, ORACLE_OWNER_ADDRESS } from "@meridian/shared";
 
 export default function DecisionPage({
   params,
@@ -245,8 +246,8 @@ export default function DecisionPage({
         />
       </div>
 
-      {/* 7. OracleControlPanel (Mode B only) */}
-      {isModeB && (
+      {/* 7. OracleControlPanel (Mode B only, oracle owner only) */}
+      {isModeB && address?.toLowerCase() === ORACLE_OWNER_ADDRESS.toLowerCase() && (
         status === DecisionStatus.OPEN ||
         status === DecisionStatus.MEASURING ||
         status === DecisionStatus.RESOLVED
@@ -262,12 +263,12 @@ export default function DecisionPage({
       )}
 
       {/* 8. Live Trade Feed */}
-      <section className="mt-8 rounded-lg border border-meridian-border bg-meridian-surface p-6">
+      <DitheredCard className="mt-8" innerClassName="p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
           Live Trade Feed
         </h2>
         <TradeFeedTicker />
-      </section>
+      </DitheredCard>
     </main>
   );
 }

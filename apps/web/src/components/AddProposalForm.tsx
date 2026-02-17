@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useAddProposal } from "@/hooks/useWrite";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
 
 interface AddProposalFormProps {
   decisionId: bigint;
@@ -60,13 +61,14 @@ export function AddProposalForm({
         maxLength={200}
         className="flex-1 rounded border border-meridian-border bg-meridian-bg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:border-meridian-gold focus:outline-none"
       />
-      <button
+      <DitheredButton
         type="submit"
+        variant="gold"
+        size="sm"
         disabled={!title.trim() || isPending || isConfirming}
-        className="rounded bg-meridian-gold px-4 py-2 text-sm font-bold text-black transition-colors hover:bg-meridian-gold/90 disabled:bg-meridian-gold/30 disabled:text-black/50"
       >
         {isPending ? "Signing..." : isConfirming ? "Confirming..." : "Add"}
-      </button>
+      </DitheredButton>
       {isSuccess && (
         <span className="self-center text-xs text-yes">Added</span>
       )}

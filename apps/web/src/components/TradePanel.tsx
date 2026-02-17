@@ -5,6 +5,8 @@ import { useAccount } from "wagmi";
 import { parseEther, formatEther } from "viem";
 import { calcBuyYes, calcBuyNo, calcSellYes, calcSellNo, FEE_BPS } from "@meridian/shared";
 import { useTrade } from "@/hooks/useWrite";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 import { useUserDeposit, usePosition } from "@/hooks/useContract";
 
 type Mode = "BUY" | "SELL";
@@ -101,9 +103,9 @@ export function TradePanel({
 
   if (!address) {
     return (
-      <div className="rounded-lg border border-meridian-border bg-meridian-surface p-6">
+      <DitheredCard innerClassName="p-6">
         <p className="text-sm text-neutral-500">Connect wallet to trade.</p>
-      </div>
+      </DitheredCard>
     );
   }
 
@@ -115,7 +117,7 @@ export function TradePanel({
   const sellExceedsBalance = isSell && parsedAmount > currentBalance;
 
   return (
-    <div className="rounded-lg border border-meridian-border bg-meridian-surface p-6">
+    <DitheredCard innerClassName="p-6">
       {/* Mode tabs */}
       <div className="mb-4 flex rounded border border-meridian-border">
         {(["BUY", "SELL"] as const).map((m) => (
@@ -266,8 +268,10 @@ export function TradePanel({
       </div>
 
       {/* Submit */}
-      <button
+      <DitheredButton
         onClick={handleTrade}
+        variant={side === "YES" ? "yes" : "no"}
+        size="lg"
         disabled={
           !hasAmount ||
           !isOpen ||
@@ -275,18 +279,14 @@ export function TradePanel({
           isConfirming ||
           sellExceedsBalance
         }
-        className={`w-full rounded py-3 text-sm font-bold transition-all ${
-          side === "YES"
-            ? "bg-yes hover:bg-yes/90 disabled:bg-yes/30"
-            : "bg-no hover:bg-no/90 disabled:bg-no/30"
-        } text-white disabled:text-white/50`}
+        className="w-full"
       >
         {isPending
           ? "Signing..."
           : isConfirming
             ? "Confirming..."
             : buttonLabel}
-      </button>
+      </DitheredButton>
 
       {isSuccess && (
         <p className="mt-2 text-center text-xs text-yes">
@@ -298,6 +298,6 @@ export function TradePanel({
           {error.message.slice(0, 80)}
         </p>
       )}
-    </div>
+    </DitheredCard>
   );
 }

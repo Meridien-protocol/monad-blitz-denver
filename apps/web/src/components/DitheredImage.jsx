@@ -157,7 +157,7 @@ export default function DitheredImage({
   tintStrength = 0.3,
   focusX = 0.5,
   focusY = 0.5,
-  onReady,
+  onReady = () => {},
 }) {
   return (
     <Canvas

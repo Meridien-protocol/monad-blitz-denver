@@ -5,6 +5,8 @@ import { formatEther } from "viem";
 import { useCollapse, useSettle, useResolve, useResolveDispute } from "@/hooks/useWrite";
 import { useDecisionB } from "@/hooks/useContract";
 import { DecisionStatus, ResolutionMode, Outcome } from "@meridian/shared";
+import { DitheredButton } from "@/components/DitheredButton.dynamic";
+import { DitheredCard } from "@/components/DitheredCard";
 
 interface SettlementPanelProps {
   decisionId: bigint;
@@ -97,7 +99,7 @@ export function SettlementPanel({
   // Mode B: MEASURING state -- show resolve button
   if (status === DecisionStatus.MEASURING) {
     return (
-      <div className="rounded-lg border border-cyan-400/30 bg-cyan-400/5 p-6">
+      <DitheredCard variant="cyan" innerClassName="bg-cyan-400/5 p-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-cyan-400">
           Measurement Phase
         </h2>
@@ -114,10 +116,11 @@ export function SettlementPanel({
         </div>
 
         <div className="flex gap-3">
-          <button
+          <DitheredButton
             onClick={() => resolve(decisionId)}
+            variant="neutral"
+            size="md"
             disabled={resolvePending || resolveConfirming}
-            className="rounded bg-cyan-500 px-4 py-2 text-sm font-medium text-meridian-bg transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {resolvePending
               ? "Signing..."
@@ -126,24 +129,26 @@ export function SettlementPanel({
                 : resolveSuccess
                   ? "Resolved"
                   : "Resolve"}
-          </button>
+          </DitheredButton>
 
           {isGuardian && (
             <>
-              <button
+              <DitheredButton
                 onClick={() => resolveDispute(decisionId, Outcome.YES)}
+                variant="yes"
+                size="md"
                 disabled={disputePending || disputeConfirming}
-                className="rounded border border-yes/40 bg-yes/10 px-4 py-2 text-sm font-medium text-yes transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {disputePending || disputeConfirming ? "..." : "Override: YES"}
-              </button>
-              <button
+              </DitheredButton>
+              <DitheredButton
                 onClick={() => resolveDispute(decisionId, Outcome.NO)}
+                variant="no"
+                size="md"
                 disabled={disputePending || disputeConfirming}
-                className="rounded border border-no/40 bg-no/10 px-4 py-2 text-sm font-medium text-no transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {disputePending || disputeConfirming ? "..." : "Override: NO"}
-              </button>
+              </DitheredButton>
             </>
           )}
         </div>
@@ -151,14 +156,14 @@ export function SettlementPanel({
         {resolveError && (
           <p className="mt-2 text-xs text-no">{resolveError.message.slice(0, 80)}</p>
         )}
-      </div>
+      </DitheredCard>
     );
   }
 
   // Mode A: Show settlement UI when collapsed
   if (status === DecisionStatus.COLLAPSED) {
     return (
-      <div className="rounded-lg border border-meridian-gold/30 bg-meridian-gold/5 p-6">
+      <DitheredCard variant="gold" innerClassName="bg-meridian-gold/5 p-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-meridian-gold">
           Settlement
         </h2>
@@ -179,10 +184,11 @@ export function SettlementPanel({
           </div>
         ) : (
           <>
-            <button
+            <DitheredButton
               onClick={() => settle(decisionId)}
+              variant="gold"
+              size="md"
               disabled={settlePending || settleConfirming}
-              className="rounded bg-meridian-gold px-4 py-2 text-sm font-medium text-meridian-bg transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {settlePending
                 ? "Signing..."
@@ -191,20 +197,20 @@ export function SettlementPanel({
                   : settleSuccess
                     ? "Settled"
                     : "Claim Payout"}
-            </button>
+            </DitheredButton>
             {settleError && (
               <p className="mt-2 text-xs text-no">{settleError.message.slice(0, 80)}</p>
             )}
           </>
         )}
-      </div>
+      </DitheredCard>
     );
   }
 
   // Mode B: RESOLVED state -- show settle with outcome info
   if (status === DecisionStatus.RESOLVED) {
     return (
-      <div className="rounded-lg border border-violet-400/30 bg-violet-400/5 p-6">
+      <DitheredCard variant="violet" innerClassName="bg-violet-400/5 p-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-400">
           Settlement (Mode B)
         </h2>
@@ -231,20 +237,22 @@ export function SettlementPanel({
 
         {isGuardian && (
           <div className="mb-4 flex gap-3">
-            <button
+            <DitheredButton
               onClick={() => resolveDispute(decisionId, Outcome.YES)}
+              variant="yes"
+              size="md"
               disabled={disputePending || disputeConfirming}
-              className="rounded border border-yes/40 bg-yes/10 px-4 py-2 text-sm font-medium text-yes transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {disputeSuccess ? "Overridden" : disputePending || disputeConfirming ? "..." : "Override: YES"}
-            </button>
-            <button
+            </DitheredButton>
+            <DitheredButton
               onClick={() => resolveDispute(decisionId, Outcome.NO)}
+              variant="no"
+              size="md"
               disabled={disputePending || disputeConfirming}
-              className="rounded border border-no/40 bg-no/10 px-4 py-2 text-sm font-medium text-no transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {disputeSuccess ? "Overridden" : disputePending || disputeConfirming ? "..." : "Override: NO"}
-            </button>
+            </DitheredButton>
           </div>
         )}
 
@@ -254,10 +262,11 @@ export function SettlementPanel({
           </div>
         ) : (
           <>
-            <button
+            <DitheredButton
               onClick={() => settle(decisionId)}
+              variant="gold"
+              size="md"
               disabled={settlePending || settleConfirming}
-              className="rounded bg-violet-500 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {settlePending
                 ? "Signing..."
@@ -266,27 +275,27 @@ export function SettlementPanel({
                   : settleSuccess
                     ? "Settled"
                     : "Claim Payout"}
-            </button>
+            </DitheredButton>
             {settleError && (
               <p className="mt-2 text-xs text-no">{settleError.message.slice(0, 80)}</p>
             )}
           </>
         )}
-      </div>
+      </DitheredCard>
     );
   }
 
   // Already settled
   if (status === DecisionStatus.SETTLED) {
     return (
-      <div className="rounded-lg border border-neutral-700 bg-neutral-800/50 p-6">
+      <DitheredCard variant="neutral" innerClassName="bg-neutral-800/50 p-6">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
           Settled
         </h2>
         <p className="text-sm text-neutral-500">
           This decision has been fully settled. Winning proposal: #{winningProposalId}
         </p>
-      </div>
+      </DitheredCard>
     );
   }
 

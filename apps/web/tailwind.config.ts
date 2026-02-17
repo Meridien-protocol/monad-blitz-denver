@@ -64,12 +64,13 @@ const config: Config = {
   				'sans-serif'
   			],
   			serif: [
-  				'var(--font-playfair)',
-  				'Georgia',
+  				'var(--font-geist-pixel-square)',
+  				'system-ui',
   				'serif'
   			],
   			mono: [
-  				'var(--font-mono)',
+  				'var(--font-geist-pixel-square)',
+  				'system-ui',
   				'monospace'
   			]
   		},
