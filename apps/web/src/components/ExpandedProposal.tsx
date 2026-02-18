@@ -4,7 +4,7 @@ import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { BPS } from "@meridian/shared";
 import { PriceChart } from "@/components/PriceChart";
-import { SwapPanel } from "@/components/SwapPanel";
+import { TradeFlowPanel } from "@/components/trade-flow";
 import { useYesPrice, usePosition, useAllocated } from "@/hooks/useContract";
 
 interface ExpandedProposalProps {
@@ -115,7 +115,7 @@ export function ExpandedProposal({
 
         {/* Right: Swap Panel */}
         <div className="lg:col-span-2">
-          <SwapPanel
+          <TradeFlowPanel
             decisionId={decisionId}
             proposalId={proposalId}
             yesReserve={yesReserve}
