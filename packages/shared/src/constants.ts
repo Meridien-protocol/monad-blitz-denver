@@ -4,14 +4,14 @@ export const MONAD_TESTNET_WSS = "wss://testnet-rpc.monad.xyz";
 export const MONAD_TESTNET_EXPLORER = "https://testnet.monadexplorer.com";
 
 // Contract addresses -- updated after deployment
-export const MERIDIAN_CORE_ADDRESS = "0x7cbFc6CFa4bafA22C79c81246c8baE58004c2cbf" as const;
+export const MERIDIAN_CORE_ADDRESS = "0x6818442316ab3E222634E08768370abDd0fde833" as const;
 
 // Protocol constants (must match MeridianCore.sol)
 export const BPS = 10_000;
 export const SPLIT_FEE_BPS = 30;
 export const TRADE_FEE_BPS = 30;
 export const MAX_CHANGE_PER_BLOCK = 2; // bps
-export const MAX_PROPOSALS = 20;
+export const MAX_PROPOSALS = 32;
 export const STALE_THRESHOLD = 12_500;
 export const MIN_LIQUIDITY = "100000000000000000"; // 0.1 MON in wei
 
