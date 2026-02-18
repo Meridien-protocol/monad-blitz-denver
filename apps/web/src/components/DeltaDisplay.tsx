@@ -1,5 +1,5 @@
 interface DeltaDisplayProps {
-  proposals: Array<{ title: string; welfare: number }>;
+  proposals: Array<{ title: string; yesPrice: number }>;
 }
 
 export function DeltaDisplay({ proposals }: DeltaDisplayProps) {
@@ -7,12 +7,12 @@ export function DeltaDisplay({ proposals }: DeltaDisplayProps) {
     return null;
   }
 
-  const sorted = [...proposals].sort((a, b) => b.welfare - a.welfare);
+  const sorted = [...proposals].sort((a, b) => b.yesPrice - a.yesPrice);
   const leader = sorted[0];
   const runner = sorted[1];
-  const delta = ((leader.welfare - runner.welfare) / 100).toFixed(1);
+  const delta = ((leader.yesPrice - runner.yesPrice) / 100).toFixed(1);
 
-  if (leader.welfare === runner.welfare) {
+  if (leader.yesPrice === runner.yesPrice) {
     return (
       <div className="rounded-md border border-meridian-border bg-meridian-surface/50 px-4 py-3 text-sm text-neutral-400">
         <span className="font-medium text-neutral-200">{leader.title}</span>

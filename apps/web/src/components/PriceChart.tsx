@@ -16,7 +16,7 @@ import {
 
 const chartConfig = {
   welfare: {
-    label: "Welfare",
+    label: "YES Price",
     color: "#8BAA6E",
   },
 } satisfies ChartConfig;
@@ -34,7 +34,7 @@ function formatTime(timestamp: number, timeframe: Timeframe): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-interface WelfareTooltipProps {
+interface PriceTooltipProps {
   active?: boolean;
   payload?: Array<{
     value: number;
@@ -42,7 +42,7 @@ interface WelfareTooltipProps {
   }>;
 }
 
-function WelfareTooltipContent({ active, payload }: WelfareTooltipProps) {
+function PriceTooltipContent({ active, payload }: PriceTooltipProps) {
   if (!active || !payload?.length) return null;
 
   const point = payload[0];
@@ -61,17 +61,17 @@ function WelfareTooltipContent({ active, payload }: WelfareTooltipProps) {
   );
 }
 
-interface WelfareChartProps {
+interface PriceChartProps {
   decisionId: bigint;
   proposalId: number;
-  currentWelfare: number;
+  currentYesPrice: number;
 }
 
-export function WelfareChart({
+export function PriceChart({
   decisionId,
   proposalId,
-  currentWelfare,
-}: WelfareChartProps) {
+  currentYesPrice,
+}: PriceChartProps) {
   const [timeframe, setTimeframe] = useState<Timeframe>("ALL");
   const { data, isLoading } = useWelfareHistory(
     decisionId,
@@ -79,7 +79,7 @@ export function WelfareChart({
     timeframe,
   );
 
-  const pct = Math.min(100, Math.max(0, (currentWelfare / BPS) * 100));
+  const pct = Math.min(100, Math.max(0, (currentYesPrice / BPS) * 100));
 
   const change = useMemo(() => {
     if (data.length < 2) return null;
@@ -148,7 +148,7 @@ export function WelfareChart({
             margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
           >
             <defs>
-              <linearGradient id="welfareGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#8BAA6E" stopOpacity={0.3} />
                 <stop offset="100%" stopColor="#8BAA6E" stopOpacity={0.02} />
               </linearGradient>
@@ -177,7 +177,7 @@ export function WelfareChart({
               width={45}
             />
             <ChartTooltip
-              content={<WelfareTooltipContent />}
+              content={<PriceTooltipContent />}
               cursor={{
                 stroke: "#D4A853",
                 strokeWidth: 1,
@@ -189,7 +189,7 @@ export function WelfareChart({
               dataKey="welfare"
               stroke="#8BAA6E"
               strokeWidth={2}
-              fill="url(#welfareGradient)"
+              fill="url(#priceGradient)"
               dot={false}
               activeDot={{
                 r: 4,
@@ -202,7 +202,7 @@ export function WelfareChart({
         </ChartContainer>
       )}
 
-      {/* Compact welfare bar */}
+      {/* Compact price bar */}
       <div className="mt-3 flex items-center gap-3">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-no/20">
           <div

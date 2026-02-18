@@ -2,27 +2,26 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useWatchContractEvent, useBlockNumber } from "wagmi";
-import { formatEther } from "viem";
 import { MeridianCoreABI, MERIDIAN_CORE_ADDRESS } from "@meridian/shared";
 
-export interface TradeEvent {
+export interface SwapEvent {
   user: string;
   decisionId: bigint;
   proposalId: bigint;
-  isYes: boolean;
+  yesForNo: boolean;
   amountIn: bigint;
   amountOut: bigint;
-  newWelfare: bigint;
+  newYesPrice: bigint;
   timestamp: number;
 }
 
 interface EventContextValue {
-  trades: TradeEvent[];
+  swaps: SwapEvent[];
   blockNumber: bigint | undefined;
 }
 
 const EventContext = createContext<EventContextValue>({
-  trades: [],
+  swaps: [],
   blockNumber: undefined,
 });
 
@@ -30,42 +29,42 @@ export function useEvents() {
   return useContext(EventContext);
 }
 
-const MAX_TRADES = 50;
+const MAX_SWAPS = 50;
 
 export function EventProvider({ children }: { children: React.ReactNode }) {
-  const [trades, setTrades] = useState<TradeEvent[]>([]);
+  const [swaps, setSwaps] = useState<SwapEvent[]>([]);
   const { data: blockNumber } = useBlockNumber({ watch: true });
 
-  const onTrade = useCallback((logs: unknown[]) => {
-    const newTrades: TradeEvent[] = [];
+  const onSwap = useCallback((logs: unknown[]) => {
+    const newSwaps: SwapEvent[] = [];
     for (const log of logs) {
-      const l = log as { args: { user: string; decisionId: bigint; proposalId: bigint; isYes: boolean; amountIn: bigint; amountOut: bigint; newWelfare: bigint } };
+      const l = log as { args: { user: string; decisionId: bigint; proposalId: bigint; yesForNo: boolean; amountIn: bigint; amountOut: bigint; newYesPrice: bigint } };
       if (!l.args) continue;
-      newTrades.push({
+      newSwaps.push({
         user: l.args.user,
         decisionId: l.args.decisionId,
         proposalId: l.args.proposalId,
-        isYes: l.args.isYes,
+        yesForNo: l.args.yesForNo,
         amountIn: l.args.amountIn,
         amountOut: l.args.amountOut,
-        newWelfare: l.args.newWelfare,
+        newYesPrice: l.args.newYesPrice,
         timestamp: Date.now(),
       });
     }
-    if (newTrades.length > 0) {
-      setTrades((prev) => [...newTrades, ...prev].slice(0, MAX_TRADES));
+    if (newSwaps.length > 0) {
+      setSwaps((prev) => [...newSwaps, ...prev].slice(0, MAX_SWAPS));
     }
   }, []);
 
   useWatchContractEvent({
     address: MERIDIAN_CORE_ADDRESS,
     abi: MeridianCoreABI,
-    eventName: "Trade",
-    onLogs: onTrade,
+    eventName: "Swapped",
+    onLogs: onSwap,
   });
 
   return (
-    <EventContext.Provider value={{ trades, blockNumber }}>
+    <EventContext.Provider value={{ swaps, blockNumber }}>
       {children}
     </EventContext.Provider>
   );

@@ -98,12 +98,13 @@ export default function Home() {
   const count = nextId ? Number(nextId) : 0;
   const { data: decisionsData, isLoading } = useDecisions(count);
 
+  // Decision tuple: [creator, title, deadline, createdAtBlock, proposalCount, totalDeposits, totalLPLiquidity, collectedFees, status, winningProposalId]
   const decisions =
     decisionsData
       ?.map((d, i) => {
         if (d.status !== "success" || !d.result) return null;
-        const [creator, deadline, , totalDeposits, proposalCount, status, , , title] = d.result;
-        return { id: i, creator, deadline, totalDeposits, proposalCount: Number(proposalCount), status, title };
+        const [creator, title, deadline, , proposalCount, totalDeposits, , , status] = d.result;
+        return { id: i, creator: creator as string, deadline, totalDeposits: totalDeposits as bigint, proposalCount: Number(proposalCount), status: status as number, title: title as string };
       })
       .filter(Boolean) ?? [];
 

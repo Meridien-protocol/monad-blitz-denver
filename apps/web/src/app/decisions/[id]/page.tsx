@@ -13,14 +13,12 @@ import { SettlementPanel } from "@/components/SettlementPanel";
 import { TradeFeedTicker } from "@/components/TradeFeedTicker";
 import { BlockHeartbeat } from "@/components/BlockHeartbeat";
 import { AddProposalForm } from "@/components/AddProposalForm";
-import { OracleControlPanel } from "@/components/OracleControlPanel";
-import { DecisionWelfareChart } from "@/components/DecisionWelfareChart";
 import { ExpandedProposal } from "@/components/ExpandedProposal";
 import { DeadlineProgress } from "@/components/DeadlineProgress";
 import { ShareButton } from "@/components/ShareButton";
 import { DitheredCard } from "@/components/DitheredCard";
-import { useDecision, useDecisionB, useProposals, useUserDeposit, useSettled } from "@/hooks/useContract";
-import { welfare, MAX_PROPOSALS, ResolutionMode, DecisionStatus, ORACLE_OWNER_ADDRESS } from "@meridian/shared";
+import { useDecision, useProposals, useBalance as useUserBalance, useSettled } from "@/hooks/useContract";
+import { yesPrice, MAX_PROPOSALS, DecisionStatus } from "@meridian/shared";
 
 export default function DecisionPage({
   params,
@@ -35,15 +33,8 @@ export default function DecisionPage({
   const { data: decision, isLoading: decisionLoading } = useDecision(decisionId);
   const proposalCount = decision ? Number(decision[4]) : 0;
   const { data: proposalsData, isLoading: proposalsLoading } = useProposals(decisionId, proposalCount);
-  const { data: userDeposit } = useUserDeposit(address, decisionId);
+  const { data: userBalance } = useUserBalance(address, decisionId);
   const { data: isSettled } = useSettled(address, decisionId);
-  const { data: decisionB } = useDecisionB(decisionId);
-
-  const isModeB = decisionB ? Number(decisionB[3]) === ResolutionMode.MODE_B : false;
-  const oracleAddress = decisionB ? (decisionB[0] as string) : "";
-  const mBaseline = decisionB ? (decisionB[5] as bigint) : BigInt(0);
-  const minImprovement = decisionB ? (decisionB[7] as bigint) : BigInt(0);
-  const measuringDeadline = decisionB ? Number(decisionB[2]) : 0;
 
   // Expandable proposal state
   const [expandedProposalId, setExpandedProposalId] = useState<number | null>(null);
@@ -76,15 +67,17 @@ export default function DecisionPage({
     );
   }
 
-  const [creator, deadline, createdAtBlock, totalDeposits, , status, winPid, virtualLiquidity, title] = decision;
+  // Decision tuple: [creator, title, deadline, createdAtBlock, proposalCount, totalDeposits, totalLPLiquidity, collectedFees, status, winningProposalId]
+  const [creator, title, deadline, createdAtBlock, , totalDeposits, totalLPLiquidity, collectedFees, status, winPid] = decision;
 
   const proposalSummaries =
     proposalsData
       ?.filter((p) => p.status === "success" && p.result)
       .map((p, i) => {
-        const [yesR, noR, , , pTitle] = p.result!;
-        const w = yesR + noR > BigInt(0) ? Number(welfare(yesR, noR)) : 5000;
-        return { title: pTitle, welfare: w, index: i };
+        // getProposal returns: [lpProvider, yesReserve, noReserve, lpLiquidity, totalAllocated, totalVolume, lpRedeemed, title]
+        const [, yesR, noR, , , , , pTitle] = p.result!;
+        const price = yesR + noR > BigInt(0) ? Number(yesPrice(yesR, noR)) : 5000;
+        return { title: pTitle, yesPrice: price, index: i };
       }) ?? [];
 
   // Find expanded proposal data
@@ -94,6 +87,8 @@ export default function DecisionPage({
           (_, i) => i === expandedProposalId && _.status === "success" && _.result,
         )
       : null;
+
+  const isCreator = address?.toLowerCase() === (creator as string).toLowerCase();
 
   return (
     <main className="relative z-10 mx-auto max-w-5xl px-4 py-10">
@@ -128,11 +123,6 @@ export default function DecisionPage({
           <StatusBadge status={status} />
           <span className="text-xs text-neutral-600">Decision #{id}</span>
           <BlockHeartbeat />
-          {isModeB && (
-            <span className="rounded border border-meridian-gold/30 px-2 py-0.5 text-xs font-medium text-meridian-gold">
-              Mode B
-            </span>
-          )}
         </div>
         <h1 className="font-serif text-4xl font-bold text-white">{title}</h1>
         <div className="mt-3 flex flex-wrap gap-4 text-sm text-neutral-500">
@@ -143,10 +133,10 @@ export default function DecisionPage({
             Deposits: {formatEther(totalDeposits)} MON
           </span>
           <span className="rounded bg-neutral-800/50 px-2 py-0.5">
-            Liquidity: {formatEther(virtualLiquidity)} vMON
+            LP Liquidity: {formatEther(totalLPLiquidity)} MON
           </span>
           <span className="rounded bg-neutral-800/50 px-2 py-0.5">
-            Creator: {creator.slice(0, 6)}...{creator.slice(-4)}
+            Creator: {(creator as string).slice(0, 6)}...{(creator as string).slice(-4)}
           </span>
         </div>
 
@@ -158,14 +148,23 @@ export default function DecisionPage({
         />
       </div>
 
-      {/* 3. DeltaDisplay */}
+      {/* 3. Deposit / Withdraw */}
+      <div className="mb-6">
+        <DepositPanel
+          decisionId={decisionId}
+          userBalance={userBalance}
+          status={status}
+        />
+      </div>
+
+      {/* 4. DeltaDisplay */}
       {proposalSummaries.length >= 2 && (
         <div className="mb-6">
           <DeltaDisplay proposals={proposalSummaries} />
         </div>
       )}
 
-      {/* 4. Proposals -- Expandable Cards */}
+      {/* 5. Proposals -- Expandable Cards */}
       <section>
         <h2 className="mb-4 text-lg font-semibold text-neutral-300">
           Proposals ({proposalCount})
@@ -177,16 +176,19 @@ export default function DecisionPage({
             <div className="grid gap-4 sm:grid-cols-2">
               {proposalsData?.map((p, i) => {
                 if (p.status !== "success" || !p.result) return null;
-                const [yesR, noR, , totalVol, pTitle] = p.result;
+                // getProposal: [lpProvider, yesReserve, noReserve, lpLiquidity, totalAllocated, totalVolume, lpRedeemed, title]
+                const [lpProvider, yesR, noR, lpLiquidity, , totalVol, , pTitle] = p.result;
                 return (
                   <ProposalCard
                     key={i}
                     decisionId={decisionId}
                     proposalId={i}
-                    title={pTitle}
-                    yesReserve={yesR}
-                    noReserve={noR}
-                    totalVolume={totalVol}
+                    title={pTitle as string}
+                    yesReserve={yesR as bigint}
+                    noReserve={noR as bigint}
+                    totalVolume={totalVol as bigint}
+                    lpProvider={lpProvider as string}
+                    lpLiquidity={lpLiquidity as bigint}
                     isExpanded={expandedProposalId === i}
                     onClick={() => toggleProposal(i)}
                   />
@@ -199,9 +201,9 @@ export default function DecisionPage({
               <ExpandedProposal
                 decisionId={decisionId}
                 proposalId={expandedProposalId}
-                proposalTitle={expandedData.result[4]}
-                yesReserve={expandedData.result[0]}
-                noReserve={expandedData.result[1]}
+                proposalTitle={expandedData.result[7] as string}
+                yesReserve={expandedData.result[1] as bigint}
+                noReserve={expandedData.result[2] as bigint}
                 status={status}
                 onClose={() => setExpandedProposalId(null)}
               />
@@ -218,54 +220,23 @@ export default function DecisionPage({
         )}
       </section>
 
-      {/* 5. Multi-line Welfare Chart */}
-      {proposalCount >= 2 && (
-        <div className="mt-8">
-          <DecisionWelfareChart
-            decisionId={decisionId}
-            proposalCount={proposalCount}
-            proposalNames={proposalSummaries.map((p) => p.title)}
-          />
-        </div>
-      )}
-
-      {/* 6. Action Panels */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <DepositPanel
-          decisionId={decisionId}
-          userDeposit={userDeposit}
-          status={status}
-        />
-
+      {/* 6. Settlement */}
+      <div className="mt-8">
         <SettlementPanel
           decisionId={decisionId}
           status={status}
-          winningProposalId={winPid}
-          userDeposit={userDeposit}
+          winningProposalId={Number(winPid)}
+          userBalance={userBalance}
           settled={!!isSettled}
+          isCreator={isCreator}
+          collectedFees={collectedFees as bigint}
         />
       </div>
 
-      {/* 7. OracleControlPanel (Mode B only, oracle owner only) */}
-      {isModeB && address?.toLowerCase() === ORACLE_OWNER_ADDRESS.toLowerCase() && (
-        status === DecisionStatus.OPEN ||
-        status === DecisionStatus.MEASURING ||
-        status === DecisionStatus.RESOLVED
-      ) && (
-        <div className="mt-6">
-          <OracleControlPanel
-            oracleAddress={oracleAddress}
-            mBaseline={mBaseline}
-            minImprovement={minImprovement}
-            measuringDeadline={measuringDeadline}
-          />
-        </div>
-      )}
-
-      {/* 8. Live Trade Feed */}
+      {/* 7. Live Trade Feed */}
       <DitheredCard className="mt-8" innerClassName="p-6">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
-          Live Trade Feed
+          Live Swap Feed
         </h2>
         <TradeFeedTicker />
       </DitheredCard>

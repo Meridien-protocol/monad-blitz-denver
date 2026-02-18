@@ -3,39 +3,40 @@ pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
 import "../src/MeridianCore.sol";
-import "./mocks/MockWelfareOracle.sol";
 
-/// @dev Invariant and fuzz tests for MeridianCore.
+/// @dev Invariant and fuzz tests for MeridianCore v2 (Quantum Futarchy).
 contract InvariantsTest is Test {
     MeridianCore core;
-    MockWelfareOracle oracle;
 
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
     address charlie = makeAddr("charlie");
-    address guardian = makeAddr("guardian");
+    address lpAlice = makeAddr("lpAlice");
+    address lpBob = makeAddr("lpBob");
 
     uint256 constant WAD = 1e18;
-    uint256 constant VIRTUAL_LIQ = 100 * WAD;
+    uint256 constant LP_LIQ = 10 * WAD;
     uint256 constant DURATION = 1000;
-    uint256 constant MEASUREMENT_PERIOD = 500;
     uint256 constant BPS = 10_000;
 
     function setUp() public {
         core = new MeridianCore();
-        oracle = new MockWelfareOracle();
-        oracle.setMetric(1000);
         vm.deal(alice, 1000 * WAD);
         vm.deal(bob, 1000 * WAD);
         vm.deal(charlie, 1000 * WAD);
+        vm.deal(lpAlice, 1000 * WAD);
+        vm.deal(lpBob, 1000 * WAD);
     }
 
-    // ============ Solvency: sum(payouts) == sum(deposits) ============
+    // ============ Exact solvency: total payouts = total deposits + total LP liquidity ============
 
-    function test_solvency_threeUsers() public {
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
-        core.addProposal(did, "B");
+    function test_exactSolvency_threeUsers() public {
+        uint256 did = core.createDecision("Test", DURATION);
+
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+        vm.prank(lpBob);
+        core.addProposal{value: LP_LIQ}(did, "B");
 
         // Deposits
         vm.prank(alice);
@@ -45,30 +46,31 @@ contract InvariantsTest is Test {
         vm.prank(charlie);
         core.deposit{value: 20 * WAD}(did);
 
-        uint256 totalDeposited = 100 * WAD;
-
-        // Trading across multiple blocks
+        // Trading
         vm.prank(alice);
-        core.buyYes(did, 0, 20 * WAD, 0);
+        core.split(did, 0, 20 * WAD);
 
         vm.roll(block.number + 50);
         vm.prank(bob);
-        core.buyNo(did, 0, 15 * WAD, 0);
+        core.split(did, 0, 15 * WAD);
 
         vm.roll(block.number + 50);
         vm.prank(charlie);
-        core.buyYes(did, 1, 10 * WAD, 0);
+        core.split(did, 1, 10 * WAD);
 
-        vm.roll(block.number + 50);
+        // Some swaps
+        (uint256 aliceYes,,) = core.getPosition(alice, did, 0);
+        vm.roll(block.number + 1);
         vm.prank(alice);
-        core.buyYes(did, 1, 10 * WAD, 0);
+        core.swapNoForYes(did, 0, aliceYes / 4, 0);
 
         // Collapse
         vm.roll(block.number + DURATION);
         core.collapse(did);
 
-        // Settle all
-        uint256 balBefore = alice.balance + bob.balance + charlie.balance;
+        // Settle all users
+        uint256 balBefore = alice.balance + bob.balance + charlie.balance + lpAlice.balance + lpBob.balance
+            + address(this).balance;
 
         vm.prank(alice);
         core.settle(did);
@@ -77,117 +79,254 @@ contract InvariantsTest is Test {
         vm.prank(charlie);
         core.settle(did);
 
-        uint256 balAfter = alice.balance + bob.balance + charlie.balance;
+        // LP redeems
+        vm.prank(lpAlice);
+        core.redeemLP(did, 0);
+        vm.prank(lpBob);
+        core.redeemLP(did, 1);
+
+        // Creator claims fees
+        core.claimFees(did);
+
+        uint256 balAfter = alice.balance + bob.balance + charlie.balance + lpAlice.balance + lpBob.balance
+            + address(this).balance;
         uint256 totalPaidOut = balAfter - balBefore;
+        uint256 totalIn = 100 * WAD + 2 * LP_LIQ; // deposits + LP liquidity
 
-        // Total payouts should be approximately equal to total deposits.
-        // Virtual liquidity can cause small deviations bounded by L.
-        assertApproxEqAbs(totalPaidOut, totalDeposited, VIRTUAL_LIQ);
+        // Should be exactly equal (no virtual liquidity leakage)
+        assertEq(totalPaidOut, totalIn, "solvency: payouts != deposits + LP");
     }
 
-    // ============ Welfare always in range ============
+    // ============ Fuzz solvency with random splits/swaps ============
 
-    function testFuzz_welfare_alwaysInRange(uint256 amount) public {
-        amount = bound(amount, WAD / 10, 50 * WAD);
+    function testFuzz_solvency_randomSplitsSwaps(uint256 aliceAmt, uint256 bobAmt, bool aliceSwapDir) public {
+        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
+        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
 
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
-
-        vm.prank(alice);
-        core.deposit{value: 50 * WAD}(did);
-
-        vm.prank(alice);
-        core.buyYes(did, 0, amount, 0);
-
-        uint256 w = core.getWelfare(did, 0);
-        assertTrue(w <= BPS, "welfare > 10000");
-        assertTrue(w > 0, "welfare == 0 after trade");
-    }
-
-    // ============ User who never traded in winning proposal gets full deposit back ============
-
-    function test_nonTrader_getsDepositBack() public {
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
-        core.addProposal(did, "B");
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+        vm.prank(lpBob);
+        core.addProposal{value: LP_LIQ}(did, "B");
 
         vm.prank(alice);
         core.deposit{value: 50 * WAD}(did);
         vm.prank(bob);
-        core.deposit{value: 30 * WAD}(did);
+        core.deposit{value: 50 * WAD}(did);
 
-        // Alice trades in proposal 0
+        // Random splits
         vm.prank(alice);
-        core.buyYes(did, 0, 20 * WAD, 0);
+        core.split(did, 0, aliceAmt);
 
-        // Bob trades ONLY in proposal 1
+        vm.roll(block.number + 10);
         vm.prank(bob);
-        core.buyYes(did, 1, 10 * WAD, 0);
+        core.split(did, 1, bobAmt);
 
-        // Collapse -- proposal 0 or 1 wins
-        vm.roll(block.number + DURATION + 1);
+        // Optional swap
+        (uint256 aliceYes, uint256 aliceNo,) = core.getPosition(alice, did, 0);
+        if (aliceYes > WAD / 100 && aliceNo > WAD / 100) {
+            vm.roll(block.number + 1);
+            vm.prank(alice);
+            if (aliceSwapDir) {
+                core.swapYesForNo(did, 0, aliceYes / 4, 0);
+            } else {
+                core.swapNoForYes(did, 0, aliceNo / 4, 0);
+            }
+        }
+
+        // Collapse + settle
+        vm.roll(block.number + DURATION);
         core.collapse(did);
 
-        (,,,,, , uint16 winId,,) = core.decisions(did);
+        uint256 totalBefore = alice.balance + bob.balance + lpAlice.balance + lpBob.balance + address(this).balance;
 
-        if (winId == 0) {
-            // Bob never traded in winning proposal -> gets full deposit
-            uint256 balBefore = bob.balance;
-            vm.prank(bob);
-            core.settle(did);
-            assertEq(bob.balance - balBefore, 30 * WAD, "Bob should get full deposit back");
-        } else {
-            // Alice never traded in winning proposal -> gets full deposit
-            uint256 balBefore = alice.balance;
-            vm.prank(alice);
-            core.settle(did);
-            assertEq(alice.balance - balBefore, 50 * WAD, "Alice should get full deposit back");
-        }
+        vm.prank(alice);
+        core.settle(did);
+        vm.prank(bob);
+        core.settle(did);
+        vm.prank(lpAlice);
+        core.redeemLP(did, 0);
+        vm.prank(lpBob);
+        core.redeemLP(did, 1);
+        core.claimFees(did);
+
+        uint256 totalAfter = alice.balance + bob.balance + lpAlice.balance + lpBob.balance + address(this).balance;
+        uint256 totalPaidOut = totalAfter - totalBefore;
+        uint256 totalIn = 100 * WAD + 2 * LP_LIQ;
+
+        assertEq(totalPaidOut, totalIn, "fuzz solvency failed");
     }
 
-    // ============ k never decreases with fees ============
+    // ============ Principal preservation: non-traders get exact deposit back ============
 
-    function test_k_neverDecreases() public {
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
+    function test_principalPreservation() public {
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+        vm.prank(lpBob);
+        core.addProposal{value: LP_LIQ}(did, "B");
+
+        // Charlie just deposits, never splits or trades
+        vm.prank(charlie);
+        core.deposit{value: 30 * WAD}(did);
+
+        // Alice trades
+        vm.prank(alice);
+        core.deposit{value: 20 * WAD}(did);
+        vm.prank(alice);
+        core.split(did, 0, 10 * WAD);
+
+        vm.roll(block.number + DURATION);
+        core.collapse(did);
+
+        uint256 charlieBefore = charlie.balance;
+        vm.prank(charlie);
+        core.settle(did);
+        assertEq(charlie.balance - charlieBefore, 30 * WAD, "non-trader principal not preserved");
+    }
+
+    // ============ yesPrice always in [0, BPS] ============
+
+    function testFuzz_yesPrice_alwaysInRange(uint256 amount) public {
+        amount = bound(amount, WAD / 10, 20 * WAD);
+
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
 
         vm.prank(alice);
         core.deposit{value: 50 * WAD}(did);
 
-        (uint128 yesR0, uint128 noR0,,,) = core.getProposal(did, 0);
-        uint256 k0 = uint256(yesR0) * uint256(noR0);
+        vm.prank(alice);
+        core.split(did, 0, amount);
+
+        (uint256 yesBal,,) = core.getPosition(alice, did, 0);
+        if (yesBal > WAD / 100) {
+            vm.roll(block.number + 1);
+            vm.prank(alice);
+            core.swapYesForNo(did, 0, yesBal / 2, 0);
+        }
+
+        uint256 p = core.getYesPrice(did, 0);
+        assertTrue(p <= BPS, "price > 10000");
+        assertTrue(p > 0, "price == 0 after trade");
+    }
+
+    // ============ k never decreases per proposal ============
+
+    function test_k_neverDecreases() public {
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+
+        (, uint256 yesR0, uint256 noR0,,,,,) = core.getProposal(did, 0);
+        uint256 k0 = yesR0 * noR0;
 
         vm.prank(alice);
-        core.buyYes(did, 0, 5 * WAD, 0);
+        core.deposit{value: 50 * WAD}(did);
+        vm.prank(alice);
+        core.split(did, 0, 10 * WAD);
 
-        (uint128 yesR1, uint128 noR1,,,) = core.getProposal(did, 0);
-        uint256 k1 = uint256(yesR1) * uint256(noR1);
-
-        assertTrue(k1 >= k0, "k decreased after trade");
+        // Swap YES for NO
+        (uint256 yesBal,,) = core.getPosition(alice, did, 0);
 
         vm.roll(block.number + 1);
         vm.prank(alice);
-        core.buyNo(did, 0, 5 * WAD, 0);
+        core.swapYesForNo(did, 0, yesBal / 2, 0);
 
-        (uint128 yesR2, uint128 noR2,,,) = core.getProposal(did, 0);
-        uint256 k2 = uint256(yesR2) * uint256(noR2);
+        (, uint256 yesR1, uint256 noR1,,,,,) = core.getProposal(did, 0);
+        uint256 k1 = yesR1 * noR1;
 
-        assertTrue(k2 >= k1, "k decreased after second trade");
+        assertTrue(k1 >= k0, "k decreased after swap");
+
+        // Swap NO for YES (use current NO balance)
+        vm.roll(block.number + 1);
+        (,uint256 noBal,) = core.getPosition(alice, did, 0);
+        vm.prank(alice);
+        core.swapNoForYes(did, 0, noBal / 2, 0);
+
+        (, uint256 yesR2, uint256 noR2,,,,,) = core.getProposal(did, 0);
+        uint256 k2 = yesR2 * noR2;
+
+        assertTrue(k2 >= k1, "k decreased after second swap");
     }
 
-    // ============ Double settle prevention ============
+    // ============ Supply invariant per proposal ============
+    // After split: totalAllocated = sum of user allocations
+    // yesBalance + noBalance should be trackable
 
-    function test_cannotDoubleSettle() public {
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
+    function test_supplyInvariant() public {
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+
+        vm.prank(alice);
+        core.deposit{value: 20 * WAD}(did);
+        vm.prank(bob);
+        core.deposit{value: 20 * WAD}(did);
+
+        vm.prank(alice);
+        core.split(did, 0, 10 * WAD);
+        vm.prank(bob);
+        core.split(did, 0, 8 * WAD);
+
+        uint256 fee1 = 10 * WAD * 30 / BPS;
+        uint256 fee2 = 8 * WAD * 30 / BPS;
+        uint256 totalEffective = (10 * WAD - fee1) + (8 * WAD - fee2);
+
+        (,,,, uint256 totalAllocated,,,) = core.getProposal(did, 0);
+        assertEq(totalAllocated, totalEffective, "totalAllocated mismatch");
+    }
+
+    // ============ No-op property: losing proposal refunds = allocations ============
+
+    function test_noOpProperty_losingRefund() public {
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
+        vm.prank(lpBob);
+        core.addProposal{value: LP_LIQ}(did, "B");
+
+        // Alice in proposal 0, Bob in proposal 1
+        vm.prank(alice);
+        core.deposit{value: 20 * WAD}(did);
+        vm.prank(alice);
+        core.split(did, 0, 10 * WAD);
+
+        vm.prank(bob);
+        core.deposit{value: 15 * WAD}(did);
+        vm.prank(bob);
+        core.split(did, 1, 10 * WAD);
+
+        vm.roll(block.number + DURATION);
+        core.collapse(did);
+
+        (,,,,,,,,, uint256 winId) = core.decisions(did);
+        uint256 losingId = winId == 0 ? 1 : 0;
+        address loser = winId == 0 ? bob : alice;
+
+        (,,uint256 loserAlloc) = core.getPosition(loser, did, losingId);
+
+        uint256 balBefore = loser.balance;
+        vm.prank(loser);
+        core.settle(did);
+
+        uint256 payout = loser.balance - balBefore;
+        // Payout should include allocation refund + unallocated balance
+        assertTrue(payout >= loserAlloc, "losing refund should include allocation");
+    }
+
+    // ============ Double-redeem prevention ============
+
+    function test_doubleRedeemPrevention() public {
+        uint256 did = core.createDecision("Test", DURATION);
+        vm.prank(lpAlice);
+        core.addProposal{value: LP_LIQ}(did, "A");
 
         vm.prank(alice);
         core.deposit{value: 10 * WAD}(did);
 
-        vm.prank(alice);
-        core.buyYes(did, 0, 5 * WAD, 0);
-
-        vm.roll(block.number + DURATION + 1);
+        vm.roll(block.number + DURATION);
         core.collapse(did);
 
         vm.prank(alice);
@@ -196,136 +335,15 @@ contract InvariantsTest is Test {
         vm.prank(alice);
         vm.expectRevert("already settled");
         core.settle(did);
+
+        // LP double redeem
+        vm.prank(lpAlice);
+        core.redeemLP(did, 0);
+
+        vm.prank(lpAlice);
+        vm.expectRevert("already redeemed");
+        core.redeemLP(did, 0);
     }
 
-    // ============ Fuzz: random trades still produce valid collapse ============
-
-    function testFuzz_randomTrading_validCollapse(uint256 aliceAmt, uint256 bobAmt, bool aliceYes, bool bobYes) public {
-        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
-        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
-
-        uint256 did = core.createDecision("Test", DURATION, VIRTUAL_LIQ);
-        core.addProposal(did, "A");
-        core.addProposal(did, "B");
-
-        vm.prank(alice);
-        core.deposit{value: 50 * WAD}(did);
-        vm.prank(bob);
-        core.deposit{value: 50 * WAD}(did);
-
-        // Random trades
-        vm.prank(alice);
-        if (aliceYes) {
-            core.buyYes(did, 0, aliceAmt, 0);
-        } else {
-            core.buyNo(did, 0, aliceAmt, 0);
-        }
-
-        vm.roll(block.number + 10);
-        vm.prank(bob);
-        if (bobYes) {
-            core.buyYes(did, 1, bobAmt, 0);
-        } else {
-            core.buyNo(did, 1, bobAmt, 0);
-        }
-
-        // Collapse should succeed
-        vm.roll(block.number + DURATION);
-        core.collapse(did);
-
-        (,,,,, uint8 status,,,) = core.decisions(did);
-        assertEq(status, 1, "should be collapsed");
-
-        // Both should be able to settle
-        vm.prank(alice);
-        core.settle(did);
-        vm.prank(bob);
-        core.settle(did);
-    }
-
-    // ============ Mode B Fuzz: binary solvency (YES outcome) ============
-
-    function testFuzz_modeBSolvency_yesOutcome(uint256 aliceAmt, uint256 bobAmt) public {
-        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
-        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
-
-        uint256 did = core.createDecision(
-            "Fuzz B", DURATION, VIRTUAL_LIQ, address(oracle), MEASUREMENT_PERIOD, 100, guardian
-        );
-        core.addProposal(did, "A");
-
-        vm.prank(alice);
-        core.deposit{value: 50 * WAD}(did);
-        vm.prank(bob);
-        core.deposit{value: 50 * WAD}(did);
-
-        vm.prank(alice);
-        core.buyYes(did, 0, aliceAmt, 0);
-
-        vm.roll(block.number + 10);
-        vm.prank(bob);
-        core.buyNo(did, 0, bobAmt, 0);
-
-        vm.roll(block.number + DURATION);
-        core.collapse(did);
-
-        oracle.setMetric(1200);
-        vm.roll(block.number + MEASUREMENT_PERIOD);
-        core.resolve(did);
-
-        // Fund extra to cover virtual liquidity divergence
-        vm.deal(address(core), address(core).balance + VIRTUAL_LIQ);
-        uint256 balBefore = alice.balance + bob.balance;
-
-        vm.prank(alice);
-        core.settle(did);
-        vm.prank(bob);
-        core.settle(did);
-
-        uint256 totalPaidOut = (alice.balance + bob.balance) - balBefore;
-        assertApproxEqAbs(totalPaidOut, 100 * WAD, VIRTUAL_LIQ);
-    }
-
-    // ============ Mode B Fuzz: binary solvency (NO outcome) ============
-
-    function testFuzz_modeBSolvency_noOutcome(uint256 aliceAmt, uint256 bobAmt) public {
-        aliceAmt = bound(aliceAmt, WAD / 10, 20 * WAD);
-        bobAmt = bound(bobAmt, WAD / 10, 20 * WAD);
-
-        uint256 did = core.createDecision(
-            "Fuzz B", DURATION, VIRTUAL_LIQ, address(oracle), MEASUREMENT_PERIOD, 100, guardian
-        );
-        core.addProposal(did, "A");
-
-        vm.prank(alice);
-        core.deposit{value: 50 * WAD}(did);
-        vm.prank(bob);
-        core.deposit{value: 50 * WAD}(did);
-
-        vm.prank(alice);
-        core.buyYes(did, 0, aliceAmt, 0);
-
-        vm.roll(block.number + 10);
-        vm.prank(bob);
-        core.buyNo(did, 0, bobAmt, 0);
-
-        vm.roll(block.number + DURATION);
-        core.collapse(did);
-
-        oracle.setMetric(900); // no improvement -> NO
-        vm.roll(block.number + MEASUREMENT_PERIOD);
-        core.resolve(did);
-
-        // Fund extra to cover virtual liquidity divergence
-        vm.deal(address(core), address(core).balance + VIRTUAL_LIQ);
-        uint256 balBefore = alice.balance + bob.balance;
-
-        vm.prank(alice);
-        core.settle(did);
-        vm.prank(bob);
-        core.settle(did);
-
-        uint256 totalPaidOut = (alice.balance + bob.balance) - balBefore;
-        assertApproxEqAbs(totalPaidOut, 100 * WAD, VIRTUAL_LIQ);
-    }
+    receive() external payable {}
 }

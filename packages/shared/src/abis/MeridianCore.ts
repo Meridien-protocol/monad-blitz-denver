@@ -1,21 +1,7 @@
-// Auto-generated from forge build output. Do not edit.
 export const MeridianCoreABI = [
   {
     "type": "function",
     "name": "BPS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "FEE_BPS",
     "inputs": [],
     "outputs": [
       {
@@ -54,7 +40,46 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
+    "name": "MIN_LIQUIDITY",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "SPLIT_FEE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "STALE_THRESHOLD",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "TRADE_FEE_BPS",
     "inputs": [],
     "outputs": [
       {
@@ -87,67 +112,11 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
-    "name": "buyNo",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proposalId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minNoOut",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "buyYes",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proposalId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minYesOut",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "claimed",
+    "name": "allocated",
     "inputs": [
       {
         "name": "",
@@ -176,6 +145,43 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
+    "name": "balances",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimFees",
+    "inputs": [
+      {
+        "name": "decisionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "collapse",
     "inputs": [
       {
@@ -198,60 +204,6 @@ export const MeridianCoreABI = [
       },
       {
         "name": "durationInBlocks",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "virtualLiquidity",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "welfareOracle",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "measurementPeriod",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minImprovement",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "guardian",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "createDecision",
-    "inputs": [
-      {
-        "name": "title",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "durationInBlocks",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "virtualLiquidity",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -282,24 +234,39 @@ export const MeridianCoreABI = [
         "internalType": "address"
       },
       {
+        "name": "title",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
         "name": "deadline",
-        "type": "uint48",
-        "internalType": "uint48"
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "createdAtBlock",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "totalDeposits",
-        "type": "uint128",
-        "internalType": "uint128"
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "proposalCount",
-        "type": "uint16",
-        "internalType": "uint16"
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalDeposits",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalLPLiquidity",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "collectedFees",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "status",
@@ -308,75 +275,6 @@ export const MeridianCoreABI = [
       },
       {
         "name": "winningProposalId",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "virtualLiquidity",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "title",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "decisionsB",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "welfareOracle",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "guardian",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "measuringDeadline",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "resolutionMode",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "outcome",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "mBaseline",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "mActual",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "minImprovement",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "measurementPeriod",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -398,31 +296,7 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
-    "name": "deposits",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getClaimable",
+    "name": "getBalance",
     "inputs": [
       {
         "name": "user",
@@ -433,75 +307,11 @@ export const MeridianCoreABI = [
         "name": "decisionId",
         "type": "uint256",
         "internalType": "uint256"
-      },
-      {
-        "name": "proposalId",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getDecisionB",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "welfareOracle",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "guardian",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "measuringDeadline",
-        "type": "uint48",
-        "internalType": "uint48"
-      },
-      {
-        "name": "resolutionMode",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "outcome",
-        "type": "uint8",
-        "internalType": "uint8"
-      },
-      {
-        "name": "mBaseline",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "mActual",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "minImprovement",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "measurementPeriod",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -530,19 +340,19 @@ export const MeridianCoreABI = [
     ],
     "outputs": [
       {
-        "name": "yesBalance",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "yes",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "name": "noBalance",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "no",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "name": "vMonSpent",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "alloc",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -564,24 +374,39 @@ export const MeridianCoreABI = [
     ],
     "outputs": [
       {
+        "name": "lpProvider",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "yesReserve",
-        "type": "uint128",
-        "internalType": "uint128"
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "noReserve",
-        "type": "uint128",
-        "internalType": "uint128"
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "name": "totalVMonMinted",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "lpLiquidity",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalAllocated",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
         "name": "totalVolume",
-        "type": "uint128",
-        "internalType": "uint128"
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lpRedeemed",
+        "type": "bool",
+        "internalType": "bool"
       },
       {
         "name": "title",
@@ -593,31 +418,7 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
-    "name": "getUserDeposit",
-    "inputs": [
-      {
-        "name": "user",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getWelfare",
+    "name": "getYesPrice",
     "inputs": [
       {
         "name": "decisionId",
@@ -641,27 +442,26 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
-    "name": "hasPosition",
+    "name": "merge",
     "inputs": [
       {
-        "name": "",
+        "name": "decisionId",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
       {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -678,7 +478,7 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
-    "name": "positions",
+    "name": "noBalance",
     "inputs": [
       {
         "name": "",
@@ -698,19 +498,9 @@ export const MeridianCoreABI = [
     ],
     "outputs": [
       {
-        "name": "yesBalance",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "noBalance",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "vMonSpent",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -732,67 +522,51 @@ export const MeridianCoreABI = [
     ],
     "outputs": [
       {
-        "name": "yesReserve",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "noReserve",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "totalVMonMinted",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "totalVolume",
-        "type": "uint128",
-        "internalType": "uint128"
+        "name": "lpProvider",
+        "type": "address",
+        "internalType": "address"
       },
       {
         "name": "title",
         "type": "string",
         "internalType": "string"
+      },
+      {
+        "name": "yesReserve",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "noReserve",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lpLiquidity",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalAllocated",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalVolume",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lpRedeemed",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "resolve",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "resolveDispute",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "outcome",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "sellNo",
+    "name": "redeemLP",
     "inputs": [
       {
         "name": "decisionId",
@@ -801,44 +575,6 @@ export const MeridianCoreABI = [
       },
       {
         "name": "proposalId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "noAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minVmonOut",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "sellYes",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "proposalId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "yesAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minVmonOut",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -885,22 +621,82 @@ export const MeridianCoreABI = [
   },
   {
     "type": "function",
-    "name": "winningTwapWelfare",
+    "name": "split",
     "inputs": [
       {
-        "name": "",
+        "name": "decisionId",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ],
-    "outputs": [
+      },
       {
-        "name": "",
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "swapNoForYes",
+    "inputs": [
+      {
+        "name": "decisionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "noIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minYesOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "swapYesForNo",
+    "inputs": [
+      {
+        "name": "decisionId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "yesIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minNoOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -921,6 +717,35 @@ export const MeridianCoreABI = [
     "stateMutability": "nonpayable"
   },
   {
+    "type": "function",
+    "name": "yesBalance",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
     "type": "event",
     "name": "Collapsed",
     "inputs": [
@@ -937,7 +762,7 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "winningTwapWelfare",
+        "name": "winningTwap",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -972,73 +797,6 @@ export const MeridianCoreABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "virtualLiquidity",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DecisionCreatedB",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      },
-      {
-        "name": "creator",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "title",
-        "type": "string",
-        "indexed": false,
-        "internalType": "string"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "virtualLiquidity",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "welfareOracle",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "guardian",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "measurementPeriod",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "minImprovement",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1070,8 +828,14 @@ export const MeridianCoreABI = [
   },
   {
     "type": "event",
-    "name": "DisputeResolved",
+    "name": "FeesClaimed",
     "inputs": [
+      {
+        "name": "creator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
       {
         "name": "decisionId",
         "type": "uint256",
@@ -1079,24 +843,24 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "guardian",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "outcome",
-        "type": "uint8",
+        "name": "amount",
+        "type": "uint256",
         "indexed": false,
-        "internalType": "uint8"
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "MeasurementStarted",
+    "name": "LPRedeemed",
     "inputs": [
+      {
+        "name": "lpProvider",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
       {
         "name": "decisionId",
         "type": "uint256",
@@ -1104,19 +868,44 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "winningProposalId",
+        "name": "proposalId",
         "type": "uint256",
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256"
       },
       {
-        "name": "mBaseline",
+        "name": "payout",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Merged",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       },
       {
-        "name": "measuringDeadline",
+        "name": "decisionId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1141,7 +930,7 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "proposer",
+        "name": "lpProvider",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1151,34 +940,9 @@ export const MeridianCoreABI = [
         "type": "string",
         "indexed": false,
         "internalType": "string"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Resolved",
-    "inputs": [
-      {
-        "name": "decisionId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
       },
       {
-        "name": "outcome",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "uint8"
-      },
-      {
-        "name": "mBaseline",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "mActual",
+        "name": "liquidity",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1207,19 +971,13 @@ export const MeridianCoreABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "pnl",
-        "type": "int256",
-        "indexed": false,
-        "internalType": "int256"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "Trade",
+    "name": "Split",
     "inputs": [
       {
         "name": "user",
@@ -1240,7 +998,44 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "isYes",
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Swapped",
+    "inputs": [
+      {
+        "name": "user",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "decisionId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposalId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "yesForNo",
         "type": "bool",
         "indexed": false,
         "internalType": "bool"
@@ -1258,7 +1053,7 @@ export const MeridianCoreABI = [
         "internalType": "uint256"
       },
       {
-        "name": "newWelfare",
+        "name": "newYesPrice",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

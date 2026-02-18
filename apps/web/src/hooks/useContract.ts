@@ -29,10 +29,10 @@ export function useProposals(decisionId: bigint, count: number) {
   });
 }
 
-export function useWelfare(decisionId: bigint, proposalId: number) {
+export function useYesPrice(decisionId: bigint, proposalId: number) {
   return useReadContract({
     ...CONTRACT,
-    functionName: "getWelfare",
+    functionName: "getYesPrice",
     args: [decisionId, BigInt(proposalId)],
   });
 }
@@ -50,14 +50,27 @@ export function usePosition(
   });
 }
 
-export function useUserDeposit(
+export function useBalance(
   address: `0x${string}` | undefined,
   decisionId: bigint,
 ) {
   return useReadContract({
     ...CONTRACT,
-    functionName: "getUserDeposit",
+    functionName: "getBalance",
     args: [address!, decisionId],
+    query: { enabled: !!address },
+  });
+}
+
+export function useAllocated(
+  address: `0x${string}` | undefined,
+  decisionId: bigint,
+  proposalId: number,
+) {
+  return useReadContract({
+    ...CONTRACT,
+    functionName: "allocated",
+    args: [decisionId, BigInt(proposalId), address!],
     query: { enabled: !!address },
   });
 }
@@ -79,14 +92,6 @@ export function useProposalData(decisionId: bigint, proposalId: number) {
     ...CONTRACT,
     functionName: "getProposal",
     args: [decisionId, BigInt(proposalId)],
-  });
-}
-
-export function useDecisionB(decisionId: bigint) {
-  return useReadContract({
-    ...CONTRACT,
-    functionName: "getDecisionB",
-    args: [decisionId],
   });
 }
 

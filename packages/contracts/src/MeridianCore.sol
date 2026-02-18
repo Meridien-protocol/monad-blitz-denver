@@ -342,8 +342,9 @@ contract MeridianCore is IMeridianCore {
 
         uint256 payout;
         if (proposalId == d.winningProposalId) {
-            // Winning LP gets yesReserve (remaining YES tokens in the pool at 1:1)
-            payout = p.yesReserve;
+            // Winning LP gets lpLiquidity/2 + yesReserve.
+            // This ensures exact solvency: total user YES payouts + LP payout = totalAllocated + lpLiquidity.
+            payout = p.lpLiquidity / 2 + p.yesReserve;
         } else {
             // Losing LP gets full liquidity back
             payout = p.lpLiquidity;

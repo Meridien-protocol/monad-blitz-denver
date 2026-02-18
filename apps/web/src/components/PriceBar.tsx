@@ -2,13 +2,13 @@
 
 import { BPS } from "@meridian/shared";
 
-interface WelfareBarProps {
-  welfare: number;
+interface PriceBarProps {
+  yesPrice: number;
   size?: "sm" | "lg";
 }
 
-export function WelfareBar({ welfare, size = "sm" }: WelfareBarProps) {
-  const pct = Math.min(100, Math.max(0, (welfare / BPS) * 100));
+export function PriceBar({ yesPrice, size = "sm" }: PriceBarProps) {
+  const pct = Math.min(100, Math.max(0, (yesPrice / BPS) * 100));
   const isLarge = size === "lg";
 
   return (

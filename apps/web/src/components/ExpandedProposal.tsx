@@ -3,9 +3,9 @@
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { BPS } from "@meridian/shared";
-import { WelfareChart } from "@/components/WelfareChart";
-import { TradePanel } from "@/components/TradePanel";
-import { useWelfare, usePosition } from "@/hooks/useContract";
+import { PriceChart } from "@/components/PriceChart";
+import { SwapPanel } from "@/components/SwapPanel";
+import { useYesPrice, usePosition, useAllocated } from "@/hooks/useContract";
 
 interface ExpandedProposalProps {
   decisionId: bigint;
@@ -27,13 +27,13 @@ export function ExpandedProposal({
   onClose,
 }: ExpandedProposalProps) {
   const { address } = useAccount();
-  const { data: welfareValue } = useWelfare(decisionId, proposalId);
+  const { data: yesPriceValue } = useYesPrice(decisionId, proposalId);
   const { data: position } = usePosition(address, decisionId, proposalId);
+  const { data: allocatedAmount } = useAllocated(address, decisionId, proposalId);
 
-  const w = welfareValue !== undefined ? Number(welfareValue) : 5000;
-  const pct = Math.min(100, Math.max(0, (w / BPS) * 100));
+  const price = yesPriceValue !== undefined ? Number(yesPriceValue) : 5000;
   const hasPosition =
-    position && (position[0] > BigInt(0) || position[1] > BigInt(0));
+    position && ((position[0] as bigint) > BigInt(0) || (position[1] as bigint) > BigInt(0));
 
   return (
     <div className="animate-slide-down mt-4 rounded-lg border border-meridian-gold/20 bg-meridian-surface">
@@ -66,10 +66,10 @@ export function ExpandedProposal({
       <div className="grid gap-6 p-6 lg:grid-cols-5">
         {/* Left: Chart + Position */}
         <div className="lg:col-span-3">
-          <WelfareChart
+          <PriceChart
             decisionId={decisionId}
             proposalId={proposalId}
-            currentWelfare={w}
+            currentYesPrice={price}
           />
 
           {/* Position display */}
@@ -86,19 +86,22 @@ export function ExpandedProposal({
                 <div>
                   <div className="text-xs text-neutral-500">YES tokens</div>
                   <div className="font-mono text-lg text-yes">
-                    {Number(formatEther(position[0])).toFixed(4)}
+                    {Number(formatEther(position[0] as bigint)).toFixed(4)}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-neutral-500">NO tokens</div>
                   <div className="font-mono text-lg text-no">
-                    {Number(formatEther(position[1])).toFixed(4)}
+                    {Number(formatEther(position[1] as bigint)).toFixed(4)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-neutral-500">vMON spent</div>
+                  <div className="text-xs text-neutral-500">Allocated</div>
                   <div className="font-mono text-lg text-neutral-300">
-                    {Number(formatEther(position[2])).toFixed(4)}
+                    {allocatedAmount !== undefined
+                      ? Number(formatEther(allocatedAmount)).toFixed(4)
+                      : "0.0000"}{" "}
+                    MON
                   </div>
                 </div>
               </div>
@@ -110,9 +113,9 @@ export function ExpandedProposal({
           </div>
         </div>
 
-        {/* Right: Trade Panel */}
+        {/* Right: Swap Panel */}
         <div className="lg:col-span-2">
-          <TradePanel
+          <SwapPanel
             decisionId={decisionId}
             proposalId={proposalId}
             yesReserve={yesReserve}

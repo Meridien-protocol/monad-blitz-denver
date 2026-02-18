@@ -65,42 +65,54 @@ export function useWithdraw() {
   return { withdraw, hash, isPending, isConfirming, isSuccess, error };
 }
 
-export function useTrade() {
+export function useSplit() {
   const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
 
-  function buyYes(decisionId: bigint, proposalId: bigint, amount: bigint, minOut: bigint) {
+  function split(decisionId: bigint, proposalId: bigint, amount: bigint) {
     writeContract({
       ...CONTRACT,
-      functionName: "buyYes",
-      args: [decisionId, proposalId, amount, minOut],
+      functionName: "split",
+      args: [decisionId, proposalId, amount],
     });
   }
 
-  function buyNo(decisionId: bigint, proposalId: bigint, amount: bigint, minOut: bigint) {
+  return { split, hash, isPending, isConfirming, isSuccess, error, reset };
+}
+
+export function useMerge() {
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
+
+  function merge(decisionId: bigint, proposalId: bigint, amount: bigint) {
     writeContract({
       ...CONTRACT,
-      functionName: "buyNo",
-      args: [decisionId, proposalId, amount, minOut],
+      functionName: "merge",
+      args: [decisionId, proposalId, amount],
     });
   }
 
-  function sellYes(decisionId: bigint, proposalId: bigint, yesAmount: bigint, minOut: bigint) {
+  return { merge, hash, isPending, isConfirming, isSuccess, error, reset };
+}
+
+export function useSwap() {
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
+
+  function swapYesForNo(decisionId: bigint, proposalId: bigint, yesIn: bigint, minNoOut: bigint) {
     writeContract({
       ...CONTRACT,
-      functionName: "sellYes",
-      args: [decisionId, proposalId, yesAmount, minOut],
+      functionName: "swapYesForNo",
+      args: [decisionId, proposalId, yesIn, minNoOut],
     });
   }
 
-  function sellNo(decisionId: bigint, proposalId: bigint, noAmount: bigint, minOut: bigint) {
+  function swapNoForYes(decisionId: bigint, proposalId: bigint, noIn: bigint, minYesOut: bigint) {
     writeContract({
       ...CONTRACT,
-      functionName: "sellNo",
-      args: [decisionId, proposalId, noAmount, minOut],
+      functionName: "swapNoForYes",
+      args: [decisionId, proposalId, noIn, minYesOut],
     });
   }
 
-  return { buyYes, buyNo, sellYes, sellNo, hash, isPending, isConfirming, isSuccess, error, reset };
+  return { swapYesForNo, swapNoForYes, hash, isPending, isConfirming, isSuccess, error, reset };
 }
 
 export function useCollapse() {
@@ -131,42 +143,42 @@ export function useSettle() {
   return { settle, hash, isPending, isConfirming, isSuccess, error };
 }
 
-export function useResolve() {
+export function useRedeemLP() {
   const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
 
-  function resolve(decisionId: bigint) {
+  function redeemLP(decisionId: bigint, proposalId: bigint) {
     writeContract({
       ...CONTRACT,
-      functionName: "resolve",
+      functionName: "redeemLP",
+      args: [decisionId, proposalId],
+    });
+  }
+
+  return { redeemLP, hash, isPending, isConfirming, isSuccess, error };
+}
+
+export function useClaimFees() {
+  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
+
+  function claimFees(decisionId: bigint) {
+    writeContract({
+      ...CONTRACT,
+      functionName: "claimFees",
       args: [decisionId],
     });
   }
 
-  return { resolve, hash, isPending, isConfirming, isSuccess, error };
-}
-
-export function useResolveDispute() {
-  const { writeContract, hash, isPending, isConfirming, isSuccess, error } = useContractWrite();
-
-  function resolveDispute(decisionId: bigint, outcome: number) {
-    writeContract({
-      ...CONTRACT,
-      functionName: "resolveDispute",
-      args: [decisionId, outcome],
-    });
-  }
-
-  return { resolveDispute, hash, isPending, isConfirming, isSuccess, error };
+  return { claimFees, hash, isPending, isConfirming, isSuccess, error };
 }
 
 export function useCreateDecision() {
   const { writeContract, hash, isPending, isConfirming, isSuccess, receipt, error } = useContractWrite();
 
-  function createDecision(title: string, durationInBlocks: bigint, virtualLiquidity: bigint) {
+  function createDecision(title: string, durationInBlocks: bigint) {
     writeContract({
       ...CONTRACT,
       functionName: "createDecision",
-      args: [title, durationInBlocks, virtualLiquidity],
+      args: [title, durationInBlocks],
     });
   }
 
@@ -176,11 +188,12 @@ export function useCreateDecision() {
 export function useAddProposal() {
   const { writeContract, hash, isPending, isConfirming, isSuccess, error, reset } = useContractWrite();
 
-  function addProposal(decisionId: bigint, title: string) {
+  function addProposal(decisionId: bigint, title: string, liquidityEth: string) {
     writeContract({
       ...CONTRACT,
       functionName: "addProposal",
       args: [decisionId, title],
+      value: parseEther(liquidityEth),
     });
   }
 

@@ -304,7 +304,7 @@ contract MeridianCoreTest is Test {
         vm.roll(block.number + longDuration);
         core.collapse(did2);
 
-        (,,,,,uint8 status,,,,) = core.decisions(did2);
+        (,,,,,,,,uint8 status,) = core.decisions(did2);
         assertEq(status, 1); // Still collapses (just no valid winner)
     }
 
@@ -485,7 +485,7 @@ contract MeridianCoreTest is Test {
         vm.roll(block.number + DURATION);
         core.collapse(did);
 
-        (,,,,,uint8 status,,,,) = core.decisions(did);
+        (,,,,,,,,uint8 status,) = core.decisions(did);
         assertEq(status, 1, "should be collapsed");
 
         // Settle everyone

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
-import { parseEther, decodeEventLog } from "viem";
+import { decodeEventLog } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MeridianCoreABI } from "@meridian/shared";
 import { useCreateDecision } from "@/hooks/useWrite";
@@ -21,7 +21,6 @@ export default function CreateDecisionPage() {
   const [title, setTitle] = useState("");
   const [durationValue, setDurationValue] = useState("");
   const [durationUnit, setDurationUnit] = useState<DurationUnit>("hours");
-  const [liquidity, setLiquidity] = useState("100");
 
   const {
     createDecision,
@@ -63,13 +62,12 @@ export default function CreateDecisionPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !durationValue || !liquidity) return;
+    if (!title.trim() || !durationValue) return;
 
     const multiplier = durationUnit === "days" ? BLOCKS_PER_HOUR * 24 : BLOCKS_PER_HOUR;
     const durationInBlocks = BigInt(Math.floor(Number(durationValue) * multiplier));
-    const virtualLiquidity = parseEther(liquidity);
 
-    createDecision(title.trim(), durationInBlocks, virtualLiquidity);
+    createDecision(title.trim(), durationInBlocks);
   }
 
   const durationBlocks = durationValue
@@ -149,25 +147,9 @@ export default function CreateDecisionPage() {
               )}
             </div>
 
-            <div>
-              <label className="mb-1 block text-xs text-neutral-500">
-                Virtual Liquidity (vMON)
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="100"
-                value={liquidity}
-                onChange={(e) =>
-                  setLiquidity(e.target.value.replace(/[^0-9.]/g, ""))
-                }
-                className="w-full rounded border border-meridian-border bg-meridian-bg px-3 py-2 font-mono text-sm text-white placeholder-neutral-600 focus:border-meridian-gold focus:outline-none"
-              />
-              <p className="mt-1 text-xs text-neutral-600">
-                Initial pool liquidity for each proposal. Higher values reduce
-                price impact.
-              </p>
-            </div>
+            <p className="text-xs text-neutral-600">
+              After creating a decision, add proposals with MON-funded AMM liquidity (min 0.1 MON each).
+            </p>
 
             <DitheredButton
               type="submit"
@@ -176,7 +158,6 @@ export default function CreateDecisionPage() {
               disabled={
                 !title.trim() ||
                 !durationValue ||
-                !liquidity ||
                 isPending ||
                 isConfirming
               }

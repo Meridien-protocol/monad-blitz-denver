@@ -2,9 +2,8 @@
 
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
-import { useCollapse, useSettle, useResolve, useResolveDispute } from "@/hooks/useWrite";
-import { useDecisionB } from "@/hooks/useContract";
-import { DecisionStatus, ResolutionMode, Outcome } from "@meridian/shared";
+import { useCollapse, useSettle, useRedeemLP, useClaimFees } from "@/hooks/useWrite";
+import { DecisionStatus } from "@meridian/shared";
 import { DitheredButton } from "@/components/DitheredButton.dynamic";
 import { DitheredCard } from "@/components/DitheredCard";
 
@@ -12,25 +11,22 @@ interface SettlementPanelProps {
   decisionId: bigint;
   status: number;
   winningProposalId: number;
-  userDeposit: bigint | undefined;
+  userBalance: bigint | undefined;
   settled: boolean;
+  isCreator: boolean;
+  collectedFees: bigint;
 }
-
-const OUTCOME_LABELS: Record<number, string> = {
-  [Outcome.UNRESOLVED]: "Unresolved",
-  [Outcome.YES]: "YES",
-  [Outcome.NO]: "NO",
-};
 
 export function SettlementPanel({
   decisionId,
   status,
   winningProposalId,
-  userDeposit,
+  userBalance,
   settled,
+  isCreator,
+  collectedFees,
 }: SettlementPanelProps) {
   const { address } = useAccount();
-  const { data: decisionB } = useDecisionB(decisionId);
   const {
     collapse,
     isPending: collapsePending,
@@ -45,28 +41,13 @@ export function SettlementPanel({
     error: settleError,
   } = useSettle();
   const {
-    resolve,
-    isPending: resolvePending,
-    isConfirming: resolveConfirming,
-    isSuccess: resolveSuccess,
-    error: resolveError,
-  } = useResolve();
-  const {
-    resolveDispute,
-    isPending: disputePending,
-    isConfirming: disputeConfirming,
-    isSuccess: disputeSuccess,
-  } = useResolveDispute();
+    claimFees,
+    isPending: claimPending,
+    isConfirming: claimConfirming,
+    isSuccess: claimSuccess,
+  } = useClaimFees();
 
   if (!address) return null;
-
-  const isModeBRaw = decisionB ? Number(decisionB[3]) : 0;
-  const isModeB = isModeBRaw === ResolutionMode.MODE_B;
-  const guardian = decisionB ? (decisionB[1] as string) : "";
-  const isGuardian = guardian.toLowerCase() === address.toLowerCase();
-  const outcomeRaw = decisionB ? Number(decisionB[4]) : 0;
-  const mBaseline = decisionB ? decisionB[5] : BigInt(0);
-  const mActual = decisionB ? decisionB[6] : BigInt(0);
 
   // Show collapse button when decision is still open and past deadline
   if (status === DecisionStatus.OPEN) {
@@ -76,8 +57,7 @@ export function SettlementPanel({
           Resolution
         </h2>
         <p className="mb-4 text-sm text-neutral-400">
-          If the deadline has passed, trigger the collapse to determine the winning proposal via TWAP welfare scores.
-          {isModeB && " This Mode B decision will enter the measurement phase after collapse."}
+          If the deadline has passed, trigger the collapse to determine the winning proposal via TWAP YES prices.
         </p>
         <button
           onClick={() => collapse(decisionId)}
@@ -96,71 +76,7 @@ export function SettlementPanel({
     );
   }
 
-  // Mode B: MEASURING state -- show resolve button
-  if (status === DecisionStatus.MEASURING) {
-    return (
-      <DitheredCard variant="cyan" innerClassName="bg-cyan-400/5 p-6">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-cyan-400">
-          Measurement Phase
-        </h2>
-        <div className="mb-4 space-y-2 text-sm text-neutral-400">
-          <div>
-            Winning proposal: <span className="font-mono text-cyan-400">#{winningProposalId}</span>
-          </div>
-          <div>
-            Baseline metric: <span className="font-mono text-neutral-200">{mBaseline.toString()}</span>
-          </div>
-          <p>
-            The welfare oracle is being measured. Once the measurement period ends, anyone can trigger resolution.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <DitheredButton
-            onClick={() => resolve(decisionId)}
-            variant="neutral"
-            size="md"
-            disabled={resolvePending || resolveConfirming}
-          >
-            {resolvePending
-              ? "Signing..."
-              : resolveConfirming
-                ? "Confirming..."
-                : resolveSuccess
-                  ? "Resolved"
-                  : "Resolve"}
-          </DitheredButton>
-
-          {isGuardian && (
-            <>
-              <DitheredButton
-                onClick={() => resolveDispute(decisionId, Outcome.YES)}
-                variant="yes"
-                size="md"
-                disabled={disputePending || disputeConfirming}
-              >
-                {disputePending || disputeConfirming ? "..." : "Override: YES"}
-              </DitheredButton>
-              <DitheredButton
-                onClick={() => resolveDispute(decisionId, Outcome.NO)}
-                variant="no"
-                size="md"
-                disabled={disputePending || disputeConfirming}
-              >
-                {disputePending || disputeConfirming ? "..." : "Override: NO"}
-              </DitheredButton>
-            </>
-          )}
-        </div>
-
-        {resolveError && (
-          <p className="mt-2 text-xs text-no">{resolveError.message.slice(0, 80)}</p>
-        )}
-      </DitheredCard>
-    );
-  }
-
-  // Mode A: Show settlement UI when collapsed
+  // Show settlement UI when collapsed
   if (status === DecisionStatus.COLLAPSED) {
     return (
       <DitheredCard variant="gold" innerClassName="bg-meridian-gold/5 p-6">
@@ -171,9 +87,9 @@ export function SettlementPanel({
           <div>
             Winning proposal: <span className="font-mono text-meridian-gold">#{winningProposalId}</span>
           </div>
-          {userDeposit !== undefined && userDeposit > BigInt(0) && (
+          {userBalance !== undefined && userBalance > BigInt(0) && (
             <div>
-              Your deposit: <span className="font-mono text-neutral-200">{formatEther(userDeposit)} MON</span>
+              Your balance: <span className="font-mono text-neutral-200">{formatEther(userBalance)} MON</span>
             </div>
           )}
         </div>
@@ -203,83 +119,28 @@ export function SettlementPanel({
             )}
           </>
         )}
-      </DitheredCard>
-    );
-  }
 
-  // Mode B: RESOLVED state -- show settle with outcome info
-  if (status === DecisionStatus.RESOLVED) {
-    return (
-      <DitheredCard variant="violet" innerClassName="bg-violet-400/5 p-6">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-400">
-          Settlement (Mode B)
-        </h2>
-        <div className="mb-4 space-y-2 text-sm text-neutral-400">
-          <div>
-            Winning proposal: <span className="font-mono text-violet-400">#{winningProposalId}</span>
-          </div>
-          <div>
-            Outcome: <span className={`font-mono font-bold ${outcomeRaw === Outcome.YES ? "text-yes" : "text-no"}`}>
-              {OUTCOME_LABELS[outcomeRaw] ?? "Unknown"}
-            </span>
-          </div>
-          <div>
-            Baseline: <span className="font-mono text-neutral-200">{mBaseline.toString()}</span>
-            {" -> "}
-            Actual: <span className="font-mono text-neutral-200">{mActual.toString()}</span>
-          </div>
-          {userDeposit !== undefined && userDeposit > BigInt(0) && (
-            <div>
-              Your deposit: <span className="font-mono text-neutral-200">{formatEther(userDeposit)} MON</span>
+        {/* Fee claim for decision creator */}
+        {isCreator && collectedFees > BigInt(0) && (
+          <div className="mt-4 border-t border-meridian-border pt-4">
+            <div className="mb-2 text-xs text-neutral-500">
+              Collected fees: <span className="font-mono text-meridian-gold">{formatEther(collectedFees)} MON</span>
             </div>
-          )}
-        </div>
-
-        {isGuardian && (
-          <div className="mb-4 flex gap-3">
             <DitheredButton
-              onClick={() => resolveDispute(decisionId, Outcome.YES)}
-              variant="yes"
-              size="md"
-              disabled={disputePending || disputeConfirming}
+              onClick={() => claimFees(decisionId)}
+              variant="neutral"
+              size="sm"
+              disabled={claimPending || claimConfirming}
             >
-              {disputeSuccess ? "Overridden" : disputePending || disputeConfirming ? "..." : "Override: YES"}
-            </DitheredButton>
-            <DitheredButton
-              onClick={() => resolveDispute(decisionId, Outcome.NO)}
-              variant="no"
-              size="md"
-              disabled={disputePending || disputeConfirming}
-            >
-              {disputeSuccess ? "Overridden" : disputePending || disputeConfirming ? "..." : "Override: NO"}
-            </DitheredButton>
-          </div>
-        )}
-
-        {settled ? (
-          <div className="rounded bg-yes/10 px-3 py-2 text-sm text-yes">
-            You have already settled this decision.
-          </div>
-        ) : (
-          <>
-            <DitheredButton
-              onClick={() => settle(decisionId)}
-              variant="gold"
-              size="md"
-              disabled={settlePending || settleConfirming}
-            >
-              {settlePending
+              {claimPending
                 ? "Signing..."
-                : settleConfirming
+                : claimConfirming
                   ? "Confirming..."
-                  : settleSuccess
-                    ? "Settled"
-                    : "Claim Payout"}
+                  : claimSuccess
+                    ? "Claimed"
+                    : "Claim Fees"}
             </DitheredButton>
-            {settleError && (
-              <p className="mt-2 text-xs text-no">{settleError.message.slice(0, 80)}</p>
-            )}
-          </>
+          </div>
         )}
       </DitheredCard>
     );

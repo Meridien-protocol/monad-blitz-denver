@@ -9,13 +9,13 @@ import { DitheredCard } from "@/components/DitheredCard";
 
 interface DepositPanelProps {
   decisionId: bigint;
-  userDeposit: bigint | undefined;
+  userBalance: bigint | undefined;
   status: number;
 }
 
-export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelProps) {
+export function DepositPanel({ decisionId, userBalance, status }: DepositPanelProps) {
   const { address } = useAccount();
-  const { data: balance } = useBalance({ address });
+  const { data: walletBalance } = useBalance({ address });
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
 
@@ -46,9 +46,9 @@ export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelPr
         Deposit / Withdraw
       </h2>
 
-      {userDeposit !== undefined && userDeposit > BigInt(0) && (
+      {userBalance !== undefined && userBalance > BigInt(0) && (
         <div className="mb-4 rounded bg-meridian-bg px-3 py-2 text-sm text-neutral-300">
-          Your deposit: <span className="font-mono text-meridian-gold">{formatEther(userDeposit)} MON</span>
+          Your credits: <span className="font-mono text-meridian-gold">{formatEther(userBalance)} MON</span>
         </div>
       )}
 
@@ -94,9 +94,9 @@ export function DepositPanel({ decisionId, userDeposit, status }: DepositPanelPr
         </DitheredButton>
       </div>
 
-      {balance && mode === "deposit" && (
+      {walletBalance && mode === "deposit" && (
         <div className="mt-2 text-xs text-neutral-600">
-          Wallet: {Number(formatEther(balance.value)).toFixed(4)} MON
+          Wallet: {Number(formatEther(walletBalance.value)).toFixed(4)} MON
         </div>
       )}
     </DitheredCard>

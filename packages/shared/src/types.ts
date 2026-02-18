@@ -4,28 +4,31 @@ export interface Decision {
   title: string;
   deadline: bigint;
   createdAtBlock: bigint;
-  totalDeposits: bigint;
   proposalCount: number;
+  totalDeposits: bigint;
+  totalLPLiquidity: bigint;
+  collectedFees: bigint;
   status: number;
   winningProposalId: number;
-  virtualLiquidity: bigint;
-  feeBps: number;
 }
 
 export interface Proposal {
   id: number;
   decisionId: bigint;
+  lpProvider: `0x${string}`;
   title: string;
   yesReserve: bigint;
   noReserve: bigint;
-  totalVMonMinted: bigint;
+  lpLiquidity: bigint;
+  totalAllocated: bigint;
   totalVolume: bigint;
+  lpRedeemed: boolean;
 }
 
 export interface Position {
   yesBalance: bigint;
   noBalance: bigint;
-  vMonSpent: bigint;
+  allocated: bigint;
 }
 
 export interface OracleState {
@@ -34,16 +37,14 @@ export interface OracleState {
   lastObservation: bigint;
 }
 
-export type TradeDirection = "YES" | "NO";
-
-export interface TradeEvent {
+export interface SwapEvent {
   user: `0x${string}`;
   decisionId: bigint;
   proposalId: number;
-  direction: TradeDirection;
+  yesForNo: boolean;
   amountIn: bigint;
   amountOut: bigint;
-  newWelfare: bigint;
+  newYesPrice: bigint;
   blockNumber: bigint;
   transactionHash: `0x${string}`;
 }

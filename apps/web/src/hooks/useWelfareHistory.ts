@@ -25,7 +25,7 @@ export function useWelfareHistory(
   timeframe: Timeframe,
 ) {
   const client = usePublicClient();
-  const { trades } = useEvents();
+  const { swaps } = useEvents();
   const [historicalData, setHistoricalData] = useState<WelfarePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -41,15 +41,15 @@ export function useWelfareHistory(
         address: MERIDIAN_CORE_ADDRESS,
         event: {
           type: "event",
-          name: "Trade",
+          name: "Swapped",
           inputs: [
             { name: "user", type: "address", indexed: true },
             { name: "decisionId", type: "uint256", indexed: true },
             { name: "proposalId", type: "uint256", indexed: true },
-            { name: "isYes", type: "bool", indexed: false },
+            { name: "yesForNo", type: "bool", indexed: false },
             { name: "amountIn", type: "uint256", indexed: false },
             { name: "amountOut", type: "uint256", indexed: false },
-            { name: "newWelfare", type: "uint256", indexed: false },
+            { name: "newYesPrice", type: "uint256", indexed: false },
           ],
         },
         args: {
@@ -91,8 +91,8 @@ export function useWelfareHistory(
           blockTimestamps.get(log.blockNumber ?? BigInt(0)) ?? Date.now(),
         welfare:
           (Number(
-            (log as unknown as { args: { newWelfare: bigint } }).args
-              .newWelfare,
+            (log as unknown as { args: { newYesPrice: bigint } }).args
+              .newYesPrice,
           ) /
             BPS) *
           100,
@@ -111,18 +111,18 @@ export function useWelfareHistory(
   }, [fetchHistory]);
 
   const livePoints: WelfarePoint[] = useMemo(() => {
-    return trades
+    return swaps
       .filter(
-        (t) =>
-          t.decisionId === decisionId &&
-          t.proposalId === BigInt(proposalId),
+        (s) =>
+          s.decisionId === decisionId &&
+          s.proposalId === BigInt(proposalId),
       )
       .reverse()
-      .map((t) => ({
-        timestamp: t.timestamp,
-        welfare: (Number(t.newWelfare) / BPS) * 100,
+      .map((s) => ({
+        timestamp: s.timestamp,
+        welfare: (Number(s.newYesPrice) / BPS) * 100,
       }));
-  }, [trades, decisionId, proposalId]);
+  }, [swaps, decisionId, proposalId]);
 
   const data = useMemo(() => {
     const allPoints = [...historicalData];

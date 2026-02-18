@@ -1,44 +1,37 @@
-const BPS = 10_000n;
+const BPS = BigInt(10_000);
 
-/** Calculate YES tokens out for a given vMON input */
-export function calcBuyYes(yesReserve: bigint, noReserve: bigint, amountIn: bigint, feeBps: bigint): bigint {
-  const effective = (amountIn * (BPS - feeBps)) / BPS;
-  return (effective * (yesReserve + noReserve + effective)) / (noReserve + effective);
+/** Calculate output for a standard x*y=k swap */
+export function calcSwapOutput(reserveIn: bigint, reserveOut: bigint, amountIn: bigint): bigint {
+  return (reserveOut * amountIn) / (reserveIn + amountIn);
 }
 
-/** Calculate NO tokens out for a given vMON input */
-export function calcBuyNo(yesReserve: bigint, noReserve: bigint, amountIn: bigint, feeBps: bigint): bigint {
-  const effective = (amountIn * (BPS - feeBps)) / BPS;
-  return (effective * (yesReserve + noReserve + effective)) / (yesReserve + effective);
+/** Calculate swap output with fee applied */
+export function calcSwapWithFee(reserveIn: bigint, reserveOut: bigint, amountIn: bigint, feeBps: bigint): bigint {
+  const fee = (amountIn * feeBps) / BPS;
+  const effective = amountIn - fee;
+  return calcSwapOutput(reserveIn, reserveOut, effective);
 }
 
-/** Calculate welfare in basis points */
-export function welfare(yesReserve: bigint, noReserve: bigint): bigint {
+/** Apply fee, returning [effective, fee] */
+export function applyFee(amount: bigint, feeBps: bigint): [bigint, bigint] {
+  const fee = (amount * feeBps) / BPS;
+  return [amount - fee, fee];
+}
+
+/** Calculate YES price in basis points */
+export function yesPrice(yesReserve: bigint, noReserve: bigint): bigint {
+  if (yesReserve + noReserve === BigInt(0)) return BigInt(5000);
   return (noReserve * BPS) / (yesReserve + noReserve);
 }
 
 /** Babylonian square root for bigint */
 export function sqrt(x: bigint): bigint {
-  if (x === 0n) return 0n;
+  if (x === BigInt(0)) return BigInt(0);
   let z = x;
-  let y = (z + 1n) / 2n;
+  let y = (z + BigInt(1)) / BigInt(2);
   while (y < z) {
     z = y;
-    y = (x / y + y) / 2n;
+    y = (x / y + y) / BigInt(2);
   }
   return z;
-}
-
-/** Calculate vMON out for selling YES tokens */
-export function calcSellYes(yesReserve: bigint, noReserve: bigint, yesAmount: bigint): bigint {
-  const R = yesReserve + noReserve + yesAmount;
-  const discriminant = R * R - 4n * noReserve * yesAmount;
-  return (R - sqrt(discriminant)) / 2n;
-}
-
-/** Calculate vMON out for selling NO tokens */
-export function calcSellNo(yesReserve: bigint, noReserve: bigint, noAmount: bigint): bigint {
-  const R = yesReserve + noReserve + noAmount;
-  const discriminant = R * R - 4n * yesReserve * noAmount;
-  return (R - sqrt(discriminant)) / 2n;
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { formatEther } from "viem";
-import { welfare } from "@meridian/shared";
-import { WelfareBar } from "@/components/WelfareBar";
+import { yesPrice } from "@meridian/shared";
+import { PriceBar } from "@/components/PriceBar";
 
 interface ProposalCardProps {
   decisionId: bigint;
@@ -11,6 +11,8 @@ interface ProposalCardProps {
   yesReserve: bigint;
   noReserve: bigint;
   totalVolume: bigint;
+  lpProvider: string;
+  lpLiquidity: bigint;
   isExpanded?: boolean;
   onClick?: () => void;
 }
@@ -21,15 +23,18 @@ export function ProposalCard({
   yesReserve,
   noReserve,
   totalVolume,
+  lpProvider,
+  lpLiquidity,
   isExpanded,
   onClick,
 }: ProposalCardProps) {
-  const w =
+  const price =
     yesReserve + noReserve > BigInt(0)
-      ? Number(welfare(yesReserve, noReserve))
+      ? Number(yesPrice(yesReserve, noReserve))
       : 5000;
 
   const volume = formatEther(totalVolume);
+  const liquidity = formatEther(lpLiquidity);
 
   return (
     <button
@@ -44,10 +49,14 @@ export function ProposalCard({
       <h3 className="mb-3 text-sm font-medium text-neutral-200 group-hover:text-white">
         {title}
       </h3>
-      <WelfareBar welfare={w} size="sm" />
+      <PriceBar yesPrice={price} size="sm" />
       <div className="mt-3 flex items-center justify-between text-xs text-neutral-500">
         <span>Proposal #{proposalId}</span>
-        <span>{parseFloat(volume).toLocaleString()} vMON volume</span>
+        <span>{parseFloat(liquidity).toFixed(2)} MON pool</span>
+      </div>
+      <div className="mt-1 flex items-center justify-between text-xs text-neutral-600">
+        <span>LP: {lpProvider.slice(0, 6)}...{lpProvider.slice(-4)}</span>
+        <span>{parseFloat(volume).toLocaleString()} MON vol</span>
       </div>
     </button>
   );

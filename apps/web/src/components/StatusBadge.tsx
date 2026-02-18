@@ -17,18 +17,6 @@ const STATUS_CONFIG: Record<number, { label: string; className: string }> = {
     label: "SETTLED",
     className: "border-neutral-500/30 bg-neutral-500/10 text-neutral-400",
   },
-  [DecisionStatus.MEASURING]: {
-    label: "MEASURING",
-    className: "border-cyan-400/30 bg-cyan-400/10 text-cyan-400",
-  },
-  [DecisionStatus.RESOLVED]: {
-    label: "RESOLVED",
-    className: "border-violet-400/30 bg-violet-400/10 text-violet-400",
-  },
-  [DecisionStatus.DISPUTED]: {
-    label: "DISPUTED",
-    className: "border-no/30 bg-no/10 text-no",
-  },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {

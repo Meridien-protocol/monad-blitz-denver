@@ -2,17 +2,16 @@
 
 import { useState, useMemo } from "react";
 import { useAccount } from "wagmi";
-import { parseEther, formatEther } from "viem";
-import { calcBuyYes, calcBuyNo, calcSellYes, calcSellNo, FEE_BPS } from "@meridian/shared";
-import { useTrade } from "@/hooks/useWrite";
+import { formatEther, parseEther } from "viem";
+import { calcSwapWithFee, TRADE_FEE_BPS } from "@meridian/shared";
+import { useSwap } from "@/hooks/useWrite";
 import { DitheredButton } from "@/components/DitheredButton.dynamic";
 import { DitheredCard } from "@/components/DitheredCard";
-import { useUserDeposit, usePosition } from "@/hooks/useContract";
+import { usePosition } from "@/hooks/useContract";
 
-type Mode = "BUY" | "SELL";
-type Side = "YES" | "NO";
+type Direction = "YES_FOR_NO" | "NO_FOR_YES";
 
-interface TradePanelProps {
+interface SwapPanelProps {
   decisionId: bigint;
   proposalId: number;
   yesReserve: bigint;
@@ -20,77 +19,61 @@ interface TradePanelProps {
   status: number;
 }
 
-export function TradePanel({
+export function SwapPanel({
   decisionId,
   proposalId,
   yesReserve,
   noReserve,
   status,
-}: TradePanelProps) {
+}: SwapPanelProps) {
   const { address } = useAccount();
-  const { data: userDeposit } = useUserDeposit(address, decisionId);
   const { data: position } = usePosition(address, decisionId, proposalId);
 
-  const [mode, setMode] = useState<Mode>("BUY");
-  const [side, setSide] = useState<Side>("YES");
+  const [direction, setDirection] = useState<Direction>("YES_FOR_NO");
   const [amount, setAmount] = useState("");
   const [slippageBps, setSlippageBps] = useState(100);
 
   const {
-    buyYes,
-    buyNo,
-    sellYes,
-    sellNo,
+    swapYesForNo,
+    swapNoForYes,
     isPending,
     isConfirming,
     isSuccess,
     error,
     reset,
-  } = useTrade();
+  } = useSwap();
 
   const isOpen = status === 0;
   const parsedAmount = amount ? parseEther(amount) : BigInt(0);
   const hasAmount = parsedAmount > BigInt(0);
 
-  const yesBalance = position ? position[0] : BigInt(0);
-  const noBalance = position ? position[1] : BigInt(0);
-  const currentBalance = side === "YES" ? yesBalance : noBalance;
+  const yesBalance = position ? (position[0] as bigint) : BigInt(0);
+  const noBalance = position ? (position[1] as bigint) : BigInt(0);
+  const currentBalance = direction === "YES_FOR_NO" ? yesBalance : noBalance;
 
   const estimate = useMemo(() => {
     if (!hasAmount || yesReserve === BigInt(0) || noReserve === BigInt(0)) return BigInt(0);
 
-    if (mode === "BUY") {
-      return side === "YES"
-        ? calcBuyYes(yesReserve, noReserve, parsedAmount, BigInt(FEE_BPS))
-        : calcBuyNo(yesReserve, noReserve, parsedAmount, BigInt(FEE_BPS));
+    if (direction === "YES_FOR_NO") {
+      return calcSwapWithFee(yesReserve, noReserve, parsedAmount, BigInt(TRADE_FEE_BPS));
     } else {
-      return side === "YES"
-        ? calcSellYes(yesReserve, noReserve, parsedAmount)
-        : calcSellNo(yesReserve, noReserve, parsedAmount);
+      return calcSwapWithFee(noReserve, yesReserve, parsedAmount, BigInt(TRADE_FEE_BPS));
     }
-  }, [mode, side, parsedAmount, yesReserve, noReserve, hasAmount]);
+  }, [direction, parsedAmount, yesReserve, noReserve, hasAmount]);
 
   const minOut = useMemo(() => {
     if (estimate === BigInt(0)) return BigInt(0);
     return (estimate * BigInt(10000 - slippageBps)) / BigInt(10000);
   }, [estimate, slippageBps]);
 
-  function handleTrade() {
+  function handleSwap() {
     if (!hasAmount || !isOpen) return;
     reset();
     const pid = BigInt(proposalId);
-    if (mode === "BUY") {
-      if (side === "YES") {
-        buyYes(decisionId, pid, parsedAmount, minOut);
-      } else {
-        buyNo(decisionId, pid, parsedAmount, minOut);
-      }
+    if (direction === "YES_FOR_NO") {
+      swapYesForNo(decisionId, pid, parsedAmount, minOut);
     } else {
-      if (side === "YES") {
-        sellYes(decisionId, pid, parsedAmount, minOut);
-      } else {
-        sellNo(decisionId, pid, parsedAmount, minOut);
-      }
+      swapNoForYes(decisionId, pid, parsedAmount, minOut);
     }
     setAmount("");
   }
@@ -104,106 +87,69 @@ export function TradePanel({
   if (!address) {
     return (
       <DitheredCard innerClassName="p-6">
-        <p className="text-sm text-neutral-500">Connect wallet to trade.</p>
+        <p className="text-sm text-neutral-500">Connect wallet to swap.</p>
       </DitheredCard>
     );
   }
 
-  const isSell = mode === "SELL";
-  const inputLabel = isSell ? `Amount (${side} tokens)` : "Amount (vMON)";
-  const outputLabel = isSell ? "Estimated vMON return" : `Estimated ${side} tokens`;
-  const buttonLabel = isSell ? `Sell ${side}` : `Buy ${side}`;
-
-  const sellExceedsBalance = isSell && parsedAmount > currentBalance;
+  const inputToken = direction === "YES_FOR_NO" ? "YES" : "NO";
+  const outputToken = direction === "YES_FOR_NO" ? "NO" : "YES";
+  const exceedsBalance = parsedAmount > currentBalance;
 
   return (
     <DitheredCard innerClassName="p-6">
-      {/* Mode tabs */}
-      <div className="mb-4 flex rounded border border-meridian-border">
-        {(["BUY", "SELL"] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => {
-              setMode(m);
-              setAmount("");
-              reset();
-            }}
-            className={`flex-1 py-2 text-sm font-bold transition-colors ${
-              mode === m
-                ? "bg-meridian-gold/20 text-meridian-gold"
-                : "text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-      {/* Balance info */}
-      {isSell ? (
-        <div className="mb-3 flex gap-4 text-xs text-neutral-500">
-          <span>
-            YES:{" "}
-            <span className="font-mono text-yes">
-              {Number(formatEther(yesBalance)).toFixed(4)}
-            </span>
-          </span>
-          <span>
-            NO:{" "}
-            <span className="font-mono text-no">
-              {Number(formatEther(noBalance)).toFixed(4)}
-            </span>
-          </span>
-        </div>
-      ) : (
-        userDeposit !== undefined && (
-          <div className="mb-3 text-xs text-neutral-500">
-            Available vMON:{" "}
-            <span className="font-mono text-neutral-300">
-              {formatEther(userDeposit)}
-            </span>
-          </div>
-        )
-      )}
-
-      {/* Side selector */}
+      {/* Direction selector */}
       <div className="mb-4 flex gap-2">
         <button
           onClick={() => {
-            setSide("YES");
+            setDirection("YES_FOR_NO");
             setAmount("");
+            reset();
           }}
           className={`flex-1 rounded py-2.5 text-sm font-bold transition-colors ${
-            side === "YES"
-              ? isSell
-                ? "bg-yes/80 text-white"
-                : "bg-yes text-white"
+            direction === "YES_FOR_NO"
+              ? "bg-yes text-white"
               : "bg-yes/10 text-yes/60 hover:bg-yes/20"
           }`}
         >
-          {isSell ? "SELL YES" : "BUY YES"}
+          YES -&gt; NO
         </button>
         <button
           onClick={() => {
-            setSide("NO");
+            setDirection("NO_FOR_YES");
             setAmount("");
+            reset();
           }}
           className={`flex-1 rounded py-2.5 text-sm font-bold transition-colors ${
-            side === "NO"
-              ? isSell
-                ? "bg-no/80 text-white"
-                : "bg-no text-white"
+            direction === "NO_FOR_YES"
+              ? "bg-no text-white"
               : "bg-no/10 text-no/60 hover:bg-no/20"
           }`}
         >
-          {isSell ? "SELL NO" : "BUY NO"}
+          NO -&gt; YES
         </button>
+      </div>
+
+      {/* Balance info */}
+      <div className="mb-3 flex gap-4 text-xs text-neutral-500">
+        <span>
+          YES:{" "}
+          <span className="font-mono text-yes">
+            {Number(formatEther(yesBalance)).toFixed(4)}
+          </span>
+        </span>
+        <span>
+          NO:{" "}
+          <span className="font-mono text-no">
+            {Number(formatEther(noBalance)).toFixed(4)}
+          </span>
+        </span>
       </div>
 
       {/* Amount input */}
       <div className="mb-3">
         <label className="mb-1 block text-xs text-neutral-500">
-          {inputLabel}
+          Amount ({inputToken} tokens)
         </label>
         <div className="flex gap-2">
           <input
@@ -214,7 +160,7 @@ export function TradePanel({
             onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
             className="w-full rounded border border-meridian-border bg-meridian-bg px-3 py-2 font-mono text-sm text-white placeholder-neutral-600 focus:border-meridian-gold focus:outline-none"
           />
-          {isSell && currentBalance > BigInt(0) && (
+          {currentBalance > BigInt(0) && (
             <button
               type="button"
               onClick={handleMax}
@@ -224,16 +170,16 @@ export function TradePanel({
             </button>
           )}
         </div>
-        {sellExceedsBalance && (
+        {exceedsBalance && (
           <p className="mt-1 text-xs text-no">Exceeds your balance.</p>
         )}
       </div>
 
       {/* Estimate */}
-      {hasAmount && estimate > BigInt(0) && !sellExceedsBalance && (
+      {hasAmount && estimate > BigInt(0) && !exceedsBalance && (
         <div className="mb-3 rounded bg-meridian-bg px-3 py-2 text-xs text-neutral-400">
           <div className="flex justify-between">
-            <span>{outputLabel}</span>
+            <span>Estimated {outputToken} tokens</span>
             <span className="font-mono text-neutral-200">
               {Number(formatEther(estimate)).toFixed(4)}
             </span>
@@ -269,15 +215,15 @@ export function TradePanel({
 
       {/* Submit */}
       <DitheredButton
-        onClick={handleTrade}
-        variant={side === "YES" ? "yes" : "no"}
+        onClick={handleSwap}
+        variant={direction === "YES_FOR_NO" ? "yes" : "no"}
         size="lg"
         disabled={
           !hasAmount ||
           !isOpen ||
           isPending ||
           isConfirming ||
-          sellExceedsBalance
+          exceedsBalance
         }
         className="w-full"
       >
@@ -285,12 +231,12 @@ export function TradePanel({
           ? "Signing..."
           : isConfirming
             ? "Confirming..."
-            : buttonLabel}
+            : `Swap ${inputToken} for ${outputToken}`}
       </DitheredButton>
 
       {isSuccess && (
         <p className="mt-2 text-center text-xs text-yes">
-          {isSell ? "Sell" : "Trade"} confirmed.
+          Swap confirmed.
         </p>
       )}
       {error && (
