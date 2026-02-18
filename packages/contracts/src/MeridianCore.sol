@@ -19,7 +19,7 @@ contract MeridianCore is IMeridianCore {
     uint256 public constant SPLIT_FEE_BPS = 30; // 0.3% on split
     uint256 public constant TRADE_FEE_BPS = 30; // 0.3% on swap
     uint256 public constant MAX_CHANGE_PER_BLOCK = 2; // bps
-    uint256 public constant MAX_PROPOSALS = 20;
+    uint256 public constant MAX_PROPOSALS = 32;
     uint256 public constant STALE_THRESHOLD = 12_500; // blocks (~1.4h on Monad)
     uint256 public constant MIN_LIQUIDITY = 1e17; // 0.1 MON
 
