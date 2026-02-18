@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { DitheredConnectButton } from "@/components/DitheredConnectButton";
 import { useAccount } from "wagmi";
 import { formatEther } from "viem";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -173,7 +173,7 @@ export default function Home() {
 
           {!isConnected && (
             <div className="mt-5 flex flex-col items-center gap-4 sm:mt-6">
-              <ConnectButton />
+              <DitheredConnectButton />
             </div>
           )}
         </section>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { decodeEventLog } from "viem";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { DitheredConnectButton } from "@/components/DitheredConnectButton";
 import { MeridianCoreABI } from "@meridian/shared";
 import { useCreateDecision } from "@/hooks/useWrite";
 import { DitheredButton } from "@/components/DitheredButton.dynamic";
@@ -86,7 +86,7 @@ export default function CreateDecisionPage() {
             <p className="mb-4 text-sm text-neutral-400">
               Connect your wallet to create a decision.
             </p>
-            <ConnectButton />
+            <DitheredConnectButton />
           </DitheredCard>
         ) : (
           <DitheredCard innerClassName="p-6">
