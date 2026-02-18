@@ -13,29 +13,26 @@ contract Seed is Script {
 
         MeridianCore core = MeridianCore(payable(coreAddress));
 
-        uint256 durationBlocks = 50_000; // ~5.5 hours on Monad
-        uint256 lpLiquidity = 0.5 ether; // per proposal
+        // ~3h10m at ~2.5 blocks/sec = ~28,500 blocks
+        uint256 durationBlocks = 28_500;
+        uint256 lpLiquidity = 0.1 ether; // MIN_LIQUIDITY per proposal
 
-        // Create decision
+        // Create the hackathon decision
         uint256 decisionId = core.createDecision(
-            "Who should lead protocol development?",
+            "Who will win Monad Blitz?",
             durationBlocks
         );
         console.log("Decision created:", decisionId);
 
-        // Add proposals (each funded with real MON)
-        core.addProposal{value: lpLiquidity}(decisionId, "Hire Alice");
-        core.addProposal{value: lpLiquidity}(decisionId, "Hire Bob");
-        core.addProposal{value: lpLiquidity}(decisionId, "Status Quo");
-        console.log("3 proposals added (each with 0.5 MON liquidity)");
+        // Seed proposals
+        core.addProposal{value: lpLiquidity}(decisionId, "Meridian");
+        console.log("Proposal 0: Meridian");
 
-        // Deposit and trade
-        core.deposit{value: 1 ether}(decisionId);
-        console.log("Deposited 1 MON");
+        core.addProposal{value: lpLiquidity}(decisionId, "CashMarket");
+        console.log("Proposal 1: CashMarket");
 
-        core.split(decisionId, 0, 0.3 ether);
-        core.split(decisionId, 1, 0.2 ether);
-        console.log("Split into proposals 0 and 1");
+        core.addProposal{value: lpLiquidity}(decisionId, "Pizza Sky Race");
+        console.log("Proposal 2: Pizza Sky Race");
 
         vm.stopBroadcast();
     }
